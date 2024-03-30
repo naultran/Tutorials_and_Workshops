@@ -7,6 +7,8 @@ output: html_notebook
 
 *link to powerpoint slides:* A power point presentation will describe the general principles of single-cell 'omics' and basics about the platforms (\~15 - 20 minutes)
 
+------------------------------------------------------------------------
+
 ## 1. FASTQ Files, genome alignments, and deconvolution of cells
 
 This workshop provides an overview of key quality control (QC) metrics and processing steps in the initial steps of single-cell transcriptomic data analysis. While detailed tutorials for processing FASTQ files, performing genome alignments, and deconvoluting cells are available through various resources, we'll focus on understanding the fundamental QC metrics and data structures.
@@ -33,6 +35,8 @@ Interpreting the knee plot involves identifying this knee point. A distinct knee
 
 [![Figure from https://isoseq.how/umi/cell-calling.html](images/clipboard-572921448.png){style="border:1px solid #000000; padding:3px; margin:2px" width="676"}](https://isoseq.how/umi/cell-calling.html)
 
+------------------------------------------------------------------------
+
 ## 2. Setting up our R environment for data exploration
 
 In preparation for the following hands-on experiences we will set up an R environment which has everything we need.
@@ -49,6 +53,8 @@ suppressPackageStartupMessages({
 
 ### **2.2. Import R objects (data)**
 
+You should have already downloaded the dataset in a previous exercise and placed it in the downloads folder. If not, download it from [here](https://satijalab.org/seurat/archive/v3.2/de_vignette).
+
 ```{r}
 seurat_object <- readRDS('./downloads/pbmc3k_final.rds') 
 
@@ -63,6 +69,8 @@ print(seurat_object)
 ```
 
 ## 3. Overview of Single-cell Data Structure
+
+To better understand how to work with single-cell/nuclei RNA sequencing data we will take a deep dive into how datasets are *typically* structured. In the diagram below we illustrate how droplet-based scRNAseq approaches separate cells and their mRNAs. But how does this translate into [***data***]{.underline}?
 
 ![Generated using biorender.com](images/clipboard-2793142743.png){style="border:1px solid #000000; padding:3px; margin:2px" width="403"}
 
@@ -86,7 +94,7 @@ print(raw_counts[1:4,1:4])
 
 ### 3.2. Counting the number of cells and genes
 
-Seurat does a lot of the heavy lifting for us when it comes to counts and other summary data. For example, the following code will tell you the number of genes and cells
+Single-cell transcriptomic analysis tools (*e.g.*, Seurat) does a lot of the heavy lifting for us when it comes to counts and other summary data information. For example, the following code will tell you the number of genes and cells, as well store raw, normalized, and scaled data, dimension reductions, and other analyses which may have been performed.
 
 ```{r}
 print(seurat_object)
@@ -97,7 +105,6 @@ This indicates that we have 13,714 genes (features) across 2,638 samples.
 However, we can also extract that information from the count table:
 
 ```{r}
-
 print(paste0('Cells: ', ncol(raw_counts)))
 print(paste0('Features:', nrow(raw_counts)))
 ```
@@ -105,8 +112,6 @@ print(paste0('Features:', nrow(raw_counts)))
 These numbers should match!
 
 ### 3.3. A deeper dive into counts
-
-So what do the counts tell us? Let's explore a few summaries using histograms and other techniques.
 
 #### 3.3a. What is sequencing depth?
 
@@ -118,11 +123,44 @@ read_depths = colSums(raw_counts)
 hist(read_depths, main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency")
 ```
 
+This histogram shows that the number of mRNA transcripts detected in each cell ranged from **N** to N, but that most were around 2,000. So what might account for these differences?
+
+-   **Cell types:** Some cell types may simply just express more mRNA than others. For example, Hepatocytes are known to contain a lot of RNA while others may not.
+
+-    **Stochastic gene expression:** Fluctuations in transcription and degradation from normal biological processes, cell states, and other factors in individual cells which have very low amounts of RNA to begin can appear as big differences.
+
+-   **Technical variability:** Sequencing depth, assay kits, and other technical factors may contribute to these differences.
+
+[*The zero-inflation question*]{.underline}*: In the early days of scRNAseq it was a widely accepted that data was zero-inflated, i.e., it had more zero's than it should because of technical challenges. Today, we better understand that the large number of zero's are not only technical, but in fact does reflect true biology as well. Here are some interesting papers on the topic: [Jiang et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5)*
+
+------------------------------------------------------------------------
+
 ## 4. Assessing data quality
 
-### 4.1. Genes and features
+Any analysis, no matter of size, should undergo rigorous QC. When it comes to single-cell transcriptomic data, there are several computational tools that help you in the process from enabling visualizations to performing a panel of QC tests and reporting several different metrics for the end user to evaluate. A list of just some of these tools can be found [here](https://www.scrna-tools.org/tools?sort=name&cats=QualityControl).
+
+```         
+https://www.scrna-tools.org/
+https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html
+```
+
+Let's go through some of the most common QC metrics, what to they mean, and why do they matter?
+
+### 4.1. Genes and transcripts
+
+How does the number of detected genes and transcripts indicate quality?
 
 ### 4.2. Mitochondrial RNA
+
+Here, biological knowledge is extremely important for evaluating this metric and removing cells based on a threshold. Consider these three experiments:
+
+-   Nuclei isolated from muscle cells which require a lot of energy
+
+-   Muscle whole cells which require a lot of energy
+
+-   Skin cells which are less metabolically active
+
+What would you expect to see (qualitative) in the amount of mitochondrial genes for each of these experiments?
 
 `{r} VlnPlot(seurat_object, features = 'percent.mt', group.by='orig.ident')}`
 

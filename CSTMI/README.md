@@ -14,12 +14,22 @@ Before diving into R programming you will want to have both R and RStudio (inter
 
 After opening R Studio you will want to create a new notebook and allow R Studio to install the packages needed. We will review the installation of packages later in this tutorial.
 
-![Start a new notebook from template](figures/MarkdownOption.png){style="border:1px solid #000000; padding:3px; margin:2px" width="484"}
+![Start a new notebook from template](figures/MarkdownOption.png)
 
 # Setting things up for this tutorial
 
+## 1. Downloading tutorial files and folders
+
+Return to the [main folder](https://github.com/naultran/Tutorials_and_Workshops/tree/main). In the top right corner you will see a green button which says __<> code__. In that dropdown menu 
+choose to download the zip folder then unzip it on your local computer.
+
+Open the file called __Basics_of_R_programming.Rmd__ in your RStudio.
+
+## 2. Making your R Studio more visually friendly
+
 For a more friendly format, as you walk through this notebook you can choose the visual mode.
 
-![Choose visual for a more friendly view!](figures/VisualButton.png){style="border:1px solid #000000; padding:3px; margin:2px" width="228" height="93"}
+![Choose visual for a more friendly view!](figures/VisualButton.png)
 
+## 3. Setting up R working directory
 You will also want to set this downloaded folder as your *working directory*. Click on **Session** in the top menu, choose **Set Working Directory**, choose **To Source File Location**.

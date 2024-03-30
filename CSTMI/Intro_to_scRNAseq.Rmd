@@ -1,0 +1,149 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Introduction to scRNAseq and data pre-processing
+
+*link to powerpoint slides:* A power point presentation will describe the general principles of single-cell 'omics' and basics about the platforms (\~15 - 20 minutes)
+
+## 1. FASTQ Files, genome alignments, and deconvolution of cells
+
+This workshop provides an overview of key quality control (QC) metrics and processing steps in the initial steps of single-cell transcriptomic data analysis. While detailed tutorials for processing FASTQ files, performing genome alignments, and deconvoluting cells are available through various resources, we'll focus on understanding the fundamental QC metrics and data structures.
+
+***Links to alignment preliminary analysis tutorials:***
+
+-   Vendor-specific pipeline resources (e.g., [10X Genomics](https://www.10xgenomics.com/support/software/cell-ranger/latest/tutorials/cr-tutorial-in))
+
+-   [Galaxy](https://training.galaxyproject.org/training-material/topics/single-cell/tutorials/scrna-preprocessing/tutorial.html)
+
+-   Google colab hands-on experience (under construction)
+
+### 1.1. Understanding the 'knee plot'
+
+Upon receiving aligned single-cell/nuclei sequencing data, one of the initial plots to examine is the 'knee plot,' commonly generated during analysis pipelines. This plot helps distinguish between barcodes representing cells and those representing background noise or empty Gel Emulsion beads (GEMs).
+
+*Gel Emulsion beads (GEMs)* are microfluidic droplets used in platforms like 10X Genomics, each potentially containing a cell or nuclei. Distinguishing between GEMs with cells and empty GEMs is crucial for accurate analysis.
+
+The knee plot visually depicts how a threshold is set to differentiate between cell barcodes and background noise. In platforms like 10X Genomics, cells within GEMs produce a larger number of unique mRNA molecules (UMIs) compared to empty GEMs. The knee plot typically shows a sudden drop (knee) in UMIs, indicating the separation between GEMs containing cells and those lacking them.
+
+![Figure from ...](images/clipboard-4280699880.png){width="642"}
+
+Interpreting the knee plot involves identifying this knee point. A distinct knee suggests successful separation, while the absence of a clear knee could indicate issues such as low RNA integrity or high ambient RNA contamination.
+
+![Figure from ...](images/clipboard-572921448.png){width="676"}
+
+## 2. Setting up our R environment for data exploration
+
+In preparation for the following hands-on experiences we will set up an R environment which has everything we need.
+
+### **2.1. Load libraries**
+
+```{r}
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(ggplot2)
+  library(tidyr)
+})
+```
+
+### **2.2. Import R objects (data)**
+
+```{r}
+seurat_object <- readRDS('./downloads/pbmc3k_final.rds') 
+
+# It will give you an error message, this is OK, we fix it here
+seurat_object <- UpdateSeuratObject(seurat_object)
+```
+
+### **2.3. Check that everything was loaded correctly**
+
+```{r}
+print(seurat_object)
+```
+
+## 3. Overview of Single-cell Data Structure
+
+![](images/clipboard-2793142743.png){width="403"}
+
+### 3.1. The Gene x Cell Matrix
+
+```{r}
+# Raw counts in a seurat object is saved in the assays-RNA-counts slot 
+raw_counts = seurat_object@assays$RNA@counts
+
+# Lets look at the first 4 columns and rows
+print(raw_counts[1:4,1:4])
+```
+
+***What does this mean?***
+
+**Columns:** The columns represent a unique `barcode`. As we can see below, this `barcode` marks an individual cell which is how we can identify each one. So in this object, the columns are the cells
+
+![](images/clipboard-1606285495.png)
+
+**Rows:** We see that the first few rows have names such as *RP11-206L10.9.* A quick *google* search will tell you that this is a human gene (Ensembl ID - ENSG00000237491). So we see in this object that the rows represent the genes.
+
+### 3.2. Counting the number of cells and genes
+
+Seurat does a lot of the heavy lifting for us when it comes to counts and other summary data. For example, the following code will tell you the number of genes and cells
+
+```{r}
+print(seurat_object)
+```
+
+This indicates that we have 13,714 genes (features) across 2,638 samples.
+
+However, we can also extract that information from the count table:
+
+```{r}
+
+print(paste0('Cells: ', ncol(raw_counts)))
+print(paste0('Features:', nrow(raw_counts)))
+```
+
+These numbers should match!
+
+### 3.3. A deeper dive into counts
+
+So what do the counts tell us? Let's explore a few summaries using histograms and other techniques.
+
+#### 3.3a. What is sequencing depth?
+
+```{r}
+# Calculate the total reads in each individual cell
+read_depths = colSums(raw_counts)
+
+# How are they distributed?
+hist(read_depths, main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency")
+```
+
+## 4. Assessing data quality
+
+### 4.1. Genes and features
+
+### 4.2. Mitochondrial RNA
+
+`{r} VlnPlot(seurat_object, features = 'percent.mt', group.by='orig.ident')}`
+
+### 4.3. Dealing with ambient RNA contamination
+
+## 5. Normalization
+
+`{r} seurat_object <- NormalizeData(seurat_object,                                 normalization.method = "LogNormalize"                               )  normalized_data = seurat_object@assays$RNA@data  # Calculate the total reads in each individual cell read_depths = colSums(normalized_data)  # How are they distributed? hist(read_depths, main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency")}`
+
+What does a gene look like?
+
+`{r} hist(normalized_data['S100A10', ], main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency", breaks = 200)}`
+
+`{r} hist(normalized_data[,'CATTGTACTTTGCT'], main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency", breaks = 200)}`
+
+## 6. Dimension reduction and clustering (SB)
+
+## 7. Annotation of cell types (SB)
+
+## 8. Trajectories and RNA velocity (SB)
+
+## 9. Inferring cell-cell communication (RN)
+
+## 10. Spatial transcriptomics

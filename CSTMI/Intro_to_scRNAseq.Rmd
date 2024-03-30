@@ -60,6 +60,7 @@ seurat_object <- readRDS('./downloads/pbmc3k_final.rds')
 
 # It will give you an error message, this is OK, we fix it here
 seurat_object <- UpdateSeuratObject(seurat_object)
+Idents(seurat_object) = 'orig.ident'
 ```
 
 ### **2.3. Check that everything was loaded correctly**
@@ -148,7 +149,37 @@ Let's go through some of the most common QC metrics, what to they mean, and why 
 
 ### 4.1. Genes and transcripts
 
-How does the number of detected genes and transcripts indicate quality?
+*How does the number of detected genes and transcripts indicate quality?* While we don't have a known number of expressed genes for each cell type, we do know that cells require the expression of hundreds to thousands of genes to function properly.
+
+**Number of genes (features)**
+
+We can check these values by running the code below:
+
+```{r}
+VlnPlot(seurat_object, features = 'nFeature_RNA') + NoLegend()
+```
+
+Here we can see that (1) the number of genes detected ranges from \~200 - 2500 and (2) most express \~900 genes. *Is this normal and expected?* In reality, there is no universal threshold, these values will depend on the cell type and the sequencing depth. But we do know that if most cells had extemely low counts that either cells were not healthy/intact or sequencing depth was much too low. It could also point to errors further upstream such as alignment to the incorrect reference genome.
+
+**Number of mRNA molecules (count)**
+
+We can also examine the total number of mRNA molecules detected:
+
+```{r}
+VlnPlot(seurat_object, features = 'nCount_RNA')
+```
+
+As above, we can see a good distribution centered around 2500 mRNA molecules. These value should always be higher than the number of features.
+
+**Correlation of features and molecules**
+
+A third way to look at this data is to examine the correlation of features and mRNA molecules:
+
+```{r}
+FeatureScatter(object = seurat_object, feature1 = 'nCount_RNA', feature2 = 'nFeature_RNA')
+```
+
+This metric is more informative because it tells you that as you detect more mRNA molecules, you also detect more different genes. This would generally be expected as you are getting a larger sampling of the mRNA resulting in an increased chance of sampling different genes. However, when you assess these plots, you will want to [**keep the biology in mind**]{.underline}.
 
 ### 4.2. Mitochondrial RNA
 
@@ -160,11 +191,49 @@ Here, biological knowledge is extremely important for evaluating this metric and
 
 -   Skin cells which are less metabolically active
 
-What would you expect to see (qualitative) in the amount of mitochondrial genes for each of these experiments?
+*What would you expect to see (qualitative) in the amount of mitochondrial genes for each of these experiments?*
 
-`{r} VlnPlot(seurat_object, features = 'percent.mt', group.by='orig.ident')}`
+**Assessing percent mitochondria counts**
 
-### 4.3. Dealing with ambient RNA contamination
+We can assess the percentage of mitochondrial genes by calculating the number of counts coming from mitochondrial genes (usually prefixed with mt- or MT-) compared to the total counts. This can be visualized like this:
+
+```{r}
+VlnPlot(seurat_object, features = 'percent.mt')
+```
+
+Note that this dataset was cleaned before downloading so the percentage of mitochondrial genes is extremely low (maximum 5%). It is typical to throw out cells with higher percentage of mitochondrial genes with the assumption that they are unhealthy. However, think back to the three experiments and consider what you would expect to see:
+
+-   Nuclei isolated from muscle cells which require a lot of energy
+
+    Despite being metabolically active, nuclei isolation is expected to wash out mitochondria. High contamination is indicative of high ambient RNA or mitochondria sticking to the the nuclei.
+
+-   Muscle whole cells which require a lot of energy
+
+    Given that muscle cells are highly metabolically active and are known to have among the most mitochondria among mammalian cells, these data may show higher percentage of mitochondrial genes than most datasets.
+
+-   Skin cells which are less metabolically active
+
+    Given that these are less metabolically active, they may be expected to show similar or lower percentage of mitochondrial genes.
+
+**Correlation of counts and mitochondrial counts**
+
+As with the features and counts, we can look at how these correlate:
+
+```{r}
+FeatureScatter(seurat_object, feature1 = 'nCount_RNA', feature2 = 'percent.mt')
+```
+
+Interestingly, these are not correlated at all. Prior to filtering, these values will be anti-correlated as mitochondria often makes up the ambient RNA (release from dead or lysed cells) and will be more represented in the background (low count cells).
+
+### 4.3. Ambient RNA contamination
+
+![https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html](images/clipboard-2328202483.png){width="2952"}
+
+### 4.4 Doublets
+
+![https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html](images/clipboard-384387352.png)
+
+### 
 
 ## 5. Normalization
 

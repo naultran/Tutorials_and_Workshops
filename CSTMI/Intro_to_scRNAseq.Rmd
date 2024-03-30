@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Introduction to scRNAseq"
 output: html_notebook
 ---
 
@@ -17,7 +17,7 @@ This workshop provides an overview of key quality control (QC) metrics and proce
 
 -   [Galaxy](https://training.galaxyproject.org/training-material/topics/single-cell/tutorials/scrna-preprocessing/tutorial.html)
 
--   Google colab hands-on experience (under construction)
+-   Google colab hands-on experience ([*under constructio*]{.underline}n)
 
 ### 1.1. Understanding the 'knee plot'
 
@@ -27,11 +27,11 @@ Upon receiving aligned single-cell/nuclei sequencing data, one of the initial pl
 
 The knee plot visually depicts how a threshold is set to differentiate between cell barcodes and background noise. In platforms like 10X Genomics, cells within GEMs produce a larger number of unique mRNA molecules (UMIs) compared to empty GEMs. The knee plot typically shows a sudden drop (knee) in UMIs, indicating the separation between GEMs containing cells and those lacking them.
 
-![Figure from ...](images/clipboard-4280699880.png){width="642"}
+[![Figure from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. https://doi.org/10.1007/978-1-0716-2756-3_1](images/clipboard-4280699880.png){style="border:1px solid #000000; padding:3px; margin:2px" width="642"}](https://link.springer.com/protocol/10.1007/978-1-0716-2756-3_1)
 
 Interpreting the knee plot involves identifying this knee point. A distinct knee suggests successful separation, while the absence of a clear knee could indicate issues such as low RNA integrity or high ambient RNA contamination.
 
-![Figure from ...](images/clipboard-572921448.png){width="676"}
+[![Figure from https://isoseq.how/umi/cell-calling.html](images/clipboard-572921448.png){style="border:1px solid #000000; padding:3px; margin:2px" width="676"}](https://isoseq.how/umi/cell-calling.html)
 
 ## 2. Setting up our R environment for data exploration
 
@@ -64,7 +64,7 @@ print(seurat_object)
 
 ## 3. Overview of Single-cell Data Structure
 
-![](images/clipboard-2793142743.png){width="403"}
+![Generated using biorender.com](images/clipboard-2793142743.png){style="border:1px solid #000000; padding:3px; margin:2px" width="403"}
 
 ### 3.1. The Gene x Cell Matrix
 
@@ -80,7 +80,7 @@ print(raw_counts[1:4,1:4])
 
 **Columns:** The columns represent a unique `barcode`. As we can see below, this `barcode` marks an individual cell which is how we can identify each one. So in this object, the columns are the cells
 
-![](images/clipboard-1606285495.png)
+![Generated in biorender.com and adapted from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. <https://doi.org/10.1007/978-1-0716-2756-3_1>](images/clipboard-1606285495.png){style="border:1px solid #000000; padding:3px; margin:2px"}
 
 **Rows:** We see that the first few rows have names such as *RP11-206L10.9.* A quick *google* search will tell you that this is a human gene (Ensembl ID - ENSG00000237491). So we see in this object that the rows represent the genes.
 
@@ -138,12 +138,6 @@ What does a gene look like?
 
 `{r} hist(normalized_data[,'CATTGTACTTTGCT'], main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency", breaks = 200)}`
 
-## 6. Dimension reduction and clustering (SB)
-
-## 7. Annotation of cell types (SB)
-
-## 8. Trajectories and RNA velocity (SB)
-
-## 9. Inferring cell-cell communication (RN)
-
-## 10. Spatial transcriptomics
+```         
+6. Dimension reduction and clustering; 7. Annotation of cell types; 8. Trajectories and RNA velocity; 9. Inferring cell-cell communication; 10. Spatial transcriptomics
+```

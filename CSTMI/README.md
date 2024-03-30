@@ -20,7 +20,7 @@ After opening R Studio you will want to create a new notebook and allow R Studio
 
 ## 1. Downloading tutorial files and folders
 
-Return to the [main folder](https://github.com/naultran/Tutorials_and_Workshops/tree/main). In the top right corner you will see a green button which says __<> code__. In that dropdown menu 
+Return to the [main folder](https://github.com/naultran/Tutorials_and_Workshops/). In the top right corner you will see a green button which says __<> code__. In that dropdown menu 
 choose to download the zip folder then unzip it on your local computer.
 
 Open the file called __Basics_of_R_programming.Rmd__ in your RStudio.

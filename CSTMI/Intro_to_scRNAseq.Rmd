@@ -19,7 +19,7 @@ This workshop provides an overview of key quality control (QC) metrics and proce
 
 -   [Galaxy](https://training.galaxyproject.org/training-material/topics/single-cell/tutorials/scrna-preprocessing/tutorial.html)
 
--   Google colab hands-on experience ([*under constructio*]{.underline}n)
+-   Google colab hands-on experience ([*under constructio*n]{.underline})
 
 ### 1.1. Understanding the 'knee plot'
 
@@ -48,20 +48,24 @@ suppressPackageStartupMessages({
   library(Seurat)
   library(ggplot2)
   library(tidyr)
+  library(scDblFinder)
+  library(SingleCellExperiment)
 })
 ```
 
-### **2.2. Import R objects (data)**
+### **2.2. Import data**
 
-You should have already downloaded the dataset in a previous exercise and placed it in the downloads folder. If not, download it from [here](https://satijalab.org/seurat/archive/v3.2/de_vignette).
+For this tutorial we will use raw unprocessed data from human peripheral blood mononuclear cells (PBMCs) generated using the 10X Genomics platform which can be download from the [Seurat page](https://satijalab.org/seurat/articles/pbmc3k_tutorial). These data should be downloaded, extracted, and placed in the downloads folder for this workshop.
 
 ```{r}
-seurat_object <- readRDS('./downloads/pbmc3k_final.rds') 
-
-# It will give you an error message, this is OK, we fix it here
-seurat_object <- UpdateSeuratObject(seurat_object)
-Idents(seurat_object) = 'orig.ident'
+# Load the PBMC dataset
+pbmc.data <- Read10X(data.dir = "./downloads/filtered_gene_bc_matrices/hg19/")
+# Initialize the Seurat object with the raw (non-normalized data).
+seurat_object <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", 
+                                    min.cells = 3, min.features = 200)
 ```
+
+*Note: We apply some preliminary filters as we know that GEMs which very low numbers of genes or genes which are barely detected are unlikely to be actual cells.*
 
 ### **2.3. Check that everything was loaded correctly**
 
@@ -79,7 +83,9 @@ To better understand how to work with single-cell/nuclei RNA sequencing data we 
 
 ```{r}
 # Raw counts in a seurat object is saved in the assays-RNA-counts slot 
-raw_counts = seurat_object@assays$RNA@counts
+raw_counts = as.matrix(seurat_object@assays$RNA@layers$counts)
+rownames(raw_counts) = rownames(seurat_object)
+colnames(raw_counts) = colnames(seurat_object)
 
 # Lets look at the first 4 columns and rows
 print(raw_counts[1:4,1:4])
@@ -101,7 +107,7 @@ Single-cell transcriptomic analysis tools (*e.g.*, Seurat) does a lot of the hea
 print(seurat_object)
 ```
 
-This indicates that we have 13,714 genes (features) across 2,638 samples.
+This indicates that we have 13,714 genes (features) across 2,700 samples.
 
 However, we can also extract that information from the count table:
 
@@ -121,14 +127,16 @@ These numbers should match!
 read_depths = colSums(raw_counts)
 
 # How are they distributed?
-hist(read_depths, main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency")
+hist(read_depths, main = "Histogram of read depth", 
+     xlab = "Depth", ylab = "Frequency",
+     breaks = 200)
 ```
 
-This histogram shows that the number of mRNA transcripts detected in each cell ranged from **N** to N, but that most were around 2,000. So what might account for these differences?
+This histogram shows that the number of mRNA transcripts detected in each cell ranged from 546 to 15,818, but that most were around 2,000. So what might account for these differences?
 
 -   **Cell types:** Some cell types may simply just express more mRNA than others. For example, Hepatocytes are known to contain a lot of RNA while others may not.
 
--    **Stochastic gene expression:** Fluctuations in transcription and degradation from normal biological processes, cell states, and other factors in individual cells which have very low amounts of RNA to begin can appear as big differences.
+-   **Stochastic gene expression:** Fluctuations in transcription and degradation from normal biological processes, cell states, and other factors in individual cells which have very low amounts of RNA to begin can appear as big differences.
 
 -   **Technical variability:** Sequencing depth, assay kits, and other technical factors may contribute to these differences.
 
@@ -159,7 +167,7 @@ We can check these values by running the code below:
 VlnPlot(seurat_object, features = 'nFeature_RNA') + NoLegend()
 ```
 
-Here we can see that (1) the number of genes detected ranges from \~200 - 2500 and (2) most express \~900 genes. *Is this normal and expected?* In reality, there is no universal threshold, these values will depend on the cell type and the sequencing depth. But we do know that if most cells had extemely low counts that either cells were not healthy/intact or sequencing depth was much too low. It could also point to errors further upstream such as alignment to the incorrect reference genome.
+Here we can see that (1) the number of genes detected ranges from \~200 - 3000 and (2) most express \~900 genes. *Is this normal and expected?* In reality, there is no universal threshold, these values will depend on the cell type and the sequencing depth. But we do know that if most cells had extemely low counts that either cells were not healthy/intact or sequencing depth was much too low. It could also point to errors further upstream such as alignment to the incorrect reference genome.
 
 **Number of mRNA molecules (count)**
 
@@ -198,10 +206,14 @@ Here, biological knowledge is extremely important for evaluating this metric and
 We can assess the percentage of mitochondrial genes by calculating the number of counts coming from mitochondrial genes (usually prefixed with mt- or MT-) compared to the total counts. This can be visualized like this:
 
 ```{r}
+# Calcuate the percentage of mitochondrial counts
+seurat_object[["percent.mt"]] <- PercentageFeatureSet(seurat_object, pattern = "^MT-")
+
+# Plot the values
 VlnPlot(seurat_object, features = 'percent.mt')
 ```
 
-Note that this dataset was cleaned before downloading so the percentage of mitochondrial genes is extremely low (maximum 5%). It is typical to throw out cells with higher percentage of mitochondrial genes with the assumption that they are unhealthy. However, think back to the three experiments and consider what you would expect to see:
+We see that the percentage of counts representing mitochondrial genes is mostly below 5% but as high as \~25%. To evaluate these results think back to the three experiments and consider what you would expect to see:
 
 -   Nuclei isolated from muscle cells which require a lot of energy
 
@@ -227,23 +239,55 @@ Interestingly, these are not correlated at all. Prior to filtering, these values
 
 ### 4.3. Ambient RNA contamination
 
-![https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html](images/clipboard-2328202483.png){width="2952"}
+As with any single-cell transcriptomic tool, there are dozens, if not more, options for removal of abient RNA. Generally, the concept for ambient RNA removal is the same - substract genes which are present in the *empty* GEMs/wells from those which are found to have cells. Other techniques such as combinatorial barcoding approaches have to make different assumptions.
+
+![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](images/clipboard-2328202483.png){width="643"}
+
+[SoupX](https://academic.oup.com/gigascience/article/9/12/giaa151/6049831) is one example of a tool which cleans up the *soup* (floating ambient RNA) from cells. This tools uses the most raw format of data which is generate before a threshold is set on the knee plot discussed above. For 10X Genomics these are stored in the `raw_feature_bc_matrix` and `filtered_feature_bc_matrix` folders.
+
+This tutorial will not go through the entire ambient RNA removal workflow. Excellent examples can be found [here](https://cellgeni.github.io/notebooks/html/new-10kPBMC-SoupX.html) and [here](https://cran.r-project.org/web/packages/SoupX/vignettes/pbmcTutorial.html).
 
 ### 4.4 Doublets
 
-![https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html](images/clipboard-384387352.png)
+Another common challenge with using single-cell transcriptomic platforms is one that can affect most single-cell based techniques including flow cytometry - doublets. These can be a result of cells sticking to each other or being too close to each other during the *sorting*, and the rate is typically a function of the total number of cells examined (more cells results in more doublets).
 
-### 
+![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](images/clipboard-384387352.png){width="1139"}
+
+Doublets can consist of either 2 cells of the same type (homotypic) or different cell types (heterotypic). As you can probably imagine, distinguising homotypic doublets is more challenging, but are generally considered to be less of a concern.
+
+[DoubletFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) and [scDblFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) are R based tool for the identification of doublets based on the general principle outlined above.
+
+```{r}
+sce = as.SingleCellExperiment(seurat_object)
+sce <- scDblFinder(sce)
+```
+
+```{r}
+# Transfer the doublet information to the seurat object
+seurat_object$scDblFinder.class = colData(sce)$scDblFinder.class
+seurat_object$scDblFinder.score = colData(sce)$scDblFinder.score
+
+```
+
+### 4.5. Filtering data
+
+```{r}
+seurat_object <- subset(seurat_object, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5 & scDblFinder.class == 'singlet')
+
+print(seurat_object)
+```
 
 ## 5. Normalization
 
-`{r} seurat_object <- NormalizeData(seurat_object,                                 normalization.method = "LogNormalize"                               )  normalized_data = seurat_object@assays$RNA@data  # Calculate the total reads in each individual cell read_depths = colSums(normalized_data)  # How are they distributed? hist(read_depths, main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency")}`
+```{r}
+seurat_object = SCTransform(seurat_object, verbose = F)
+seurat_object = RunPCA(seurat_object, verbose = F)
+seurat_object = RunUMAP(seurat_object, dims = 1:30, verbose = F)
+```
 
-What does a gene look like?
-
-`{r} hist(normalized_data['S100A10', ], main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency", breaks = 200)}`
-
-`{r} hist(normalized_data[,'CATTGTACTTTGCT'], main = "Histogram of read depth", xlab = "Depth", ylab = "Frequency", breaks = 200)}`
+```{r}
+DimPlot(seurat_object, group.by='orig.ident')
+```
 
 ```         
 6. Dimension reduction and clustering; 7. Annotation of cell types; 8. Trajectories and RNA velocity; 9. Inferring cell-cell communication; 10. Spatial transcriptomics

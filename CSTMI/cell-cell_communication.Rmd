@@ -1,0 +1,10 @@
+---
+title: "Cell-cell_communication analysis"
+output: html_document
+---
+
+# Introduction to cell-cell communication analysis
+
+*link to powerpoint slides:* A power point presentation will describe the general principles of single-cell 'omics' and basics about the platforms (\~15 - 20 minutes)
+
+------------------------------------------------------------------------

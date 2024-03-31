@@ -229,10 +229,38 @@ library(GenomicRanges)
 
 This workshop which will eventually explore and analysis single-cell transcriptomic data will depend on several specialized packages. Before we start, lets install them all:
 
-```{r}
-install.packages(c('tidyr','dplyr', 'deSolve', 'ggplot2', 'here'))
-BiocManager::install(c('Seurat', 'pheatmap'))
+suppressPackageStartupMessages({
 
+library(tidyr)
+
+library(dplyr)
+
+library(deSolve)
+
+library(ggplot2)
+
+library(Seurat)
+
+library(pheatmap)
+
+library(here)
+
+library(SoupX)
+
+library(SingleCellExperiment)
+
+})
+
+```{r}
+install.packages(c('tidyr','dplyr', 'deSolve', 'ggplot2', 'here', 'SoupX', 'remotes'))
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install(c('Seurat', 'pheatmap', 'SingleCellExperiment', 'scDblFinder'))
+```
+
+```{r}
 suppressPackageStartupMessages({
   library(tidyr)
   library(dplyr)
@@ -241,6 +269,8 @@ suppressPackageStartupMessages({
   library(Seurat)
   library(pheatmap)
   library(here)
+  library(SoupX)
+  library(SingleCellExperiment)
 })
 ```
 

@@ -95,7 +95,7 @@ print(raw_counts[1:4,1:4])
 
 **Columns:** The columns represent a unique `barcode`. As we can see below, this `barcode` marks an individual cell which is how we can identify each one. So in this object, the columns are the cells
 
-![Generated in biorender.com and adapted from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. <https://doi.org/10.1007/978-1-0716-2756-3_1>](images/clipboard-1606285495.png){style="border:1px solid #000000; padding:3px; margin:2px"}
+![Generated in biorender.com and adapted from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. <https://doi.org/10.1007/978-1-0716-2756-3_1>](images/clipboard-1606285495.png){style="border:1px solid #000000; padding:3px; margin:2px" width="826"}
 
 **Rows:** We see that the first few rows have names such as *RP11-206L10.9.* A quick *google* search will tell you that this is a human gene (Ensembl ID - ENSG00000237491). So we see in this object that the rows represent the genes.
 
@@ -253,14 +253,18 @@ Another common challenge with using single-cell transcriptomic platforms is one 
 
 ![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](images/clipboard-384387352.png){width="1139"}
 
+*Note: We will discuss dimension reduction which is central to this approach in a later module.*
+
 Doublets can consist of either 2 cells of the same type (homotypic) or different cell types (heterotypic). As you can probably imagine, distinguising homotypic doublets is more challenging, but are generally considered to be less of a concern.
 
-[DoubletFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) and [scDblFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) are R based tool for the identification of doublets based on the general principle outlined above.
+[DoubletFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) and [scDblFinder](https://www.cell.com/cell-systems/fulltext/S2405-4712(19)30073-0) are R based tool for the identification of doublets based on the general principle outlined above. This example uses scDblFinder:
 
 ```{r}
-sce = as.SingleCellExperiment(seurat_object)
-sce <- scDblFinder(sce)
+sce = as.SingleCellExperiment(seurat_object) # We need to convert the Seurat format to SingleCellExperiment format
+sce <- scDblFinder(sce) # Run scDblFinder
 ```
+
+Next we will transfer the information gained from this analysis into the Seurat object so that we can visualize it a later step.
 
 ```{r}
 # Transfer the doublet information to the seurat object
@@ -271,6 +275,14 @@ seurat_object$scDblFinder.score = colData(sce)$scDblFinder.score
 
 ### 4.5. Filtering data
 
+Ultimately, the purpose of the QC analyses is not only to understand your data and find any major issues. It is also used to identify individual data points which are likely problematic and could negatively impact subsequent analyses. Because we often have thousands of data points, we generally accept that some of these data points are technical noise which can simply be removed. For example, here we:
+
+-   Remove cells with extremely high or low counts as either empty droplets or multiplets.
+
+-   Remove cells with more than 5% of reads from mitochondrial genes as an indicator of unhealthy cells.
+
+-   Remove cells classified as doublets.
+
 ```{r}
 seurat_object <- subset(seurat_object, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5 & scDblFinder.class == 'singlet')
 
@@ -279,14 +291,18 @@ print(seurat_object)
 
 ## 5. Normalization
 
-```{r}
-seurat_object = SCTransform(seurat_object, verbose = F)
-seurat_object = RunPCA(seurat_object, verbose = F)
-seurat_object = RunUMAP(seurat_object, dims = 1:30, verbose = F)
-```
+Finally we want to address the issue of unequal sequencing depth and other technical noise by performing normalization. Here we normalize the data using a *regularized negative binomial regression* which models adjusts the counts for each gene based on the total number of counts within a cell with adjustments for lowly and highly expressed genes as [described here](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1874-1).
 
 ```{r}
-DimPlot(seurat_object, group.by='orig.ident')
+seurat_object = SCTransform(seurat_object, verbose = F)
+```
+
+Finally we want to visualize the data. To do this we need to perform dimension reduction which will be covered in a later module. We will run it here for visualization purposes.
+
+```{r}
+seurat_object = RunPCA(seurat_object, verbose = F)
+seurat_object = RunUMAP(seurat_object, dims = 1:30, verbose = F)
+FeaturePlot(seurat_object, features = c('scDblFinder.score', 'percent.mt', 'nFeature_RNA', 'nCount_RNA'))
 ```
 
 ```         

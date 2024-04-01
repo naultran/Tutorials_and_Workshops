@@ -229,28 +229,6 @@ library(GenomicRanges)
 
 This workshop which will eventually explore and analysis single-cell transcriptomic data will depend on several specialized packages. Before we start, lets install them all:
 
-suppressPackageStartupMessages({
-
-library(tidyr)
-
-library(dplyr)
-
-library(deSolve)
-
-library(ggplot2)
-
-library(Seurat)
-
-library(pheatmap)
-
-library(here)
-
-library(SoupX)
-
-library(SingleCellExperiment)
-
-})
-
 ```{r}
 install.packages(c('tidyr','dplyr', 'deSolve', 'ggplot2', 'here', 'SoupX', 'remotes'))
 
@@ -271,6 +249,7 @@ suppressPackageStartupMessages({
   library(here)
   library(SoupX)
   library(SingleCellExperiment)
+  library(scDblFinder)
 })
 ```
 
@@ -328,7 +307,7 @@ ggplot(bw_df, aes(x = Group, y = Value, fill = Group)) +
 
 #### 4.1b. Excel tables
 
-As you become more confortable with coding for your data analysis you will see that it is generally easier to work with *tab-delimited (.txt, .tab) or comma-separated (.csv)* files. However, it is not impossible or that much harder to work with excel tables if it is what you have (though you can always export the table). Excel is a proprietary format and the possibility of having multiple sheets in a file is where some of the challenges arise. To deal with this we need to use a package such as `readxl`. Use the following empty code chunks and lessons from section 3 to install and load this package
+As you become more comfortable with coding for your data analysis you will see that it is generally easier to work with *tab-delimited (.txt, .tab) or comma-separated (.csv)* files. However, it is not impossible or that much harder to work with excel tables if it is what you have (though you can always export the table). Excel is a proprietary format and the possibility of having multiple sheets in a file is where some of the challenges arise. To deal with this we need to use a package such as `readxl`. Use the following empty code chunks and lessons from section 3 to install and load this package
 
 ```{r}
 # Write your code to install readxl from CRAN and try it out

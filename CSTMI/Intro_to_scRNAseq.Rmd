@@ -5,21 +5,23 @@ output: html_notebook
 
 # Introduction to scRNAseq and data pre-processing
 
-*link to powerpoint slides:* A power point presentation will describe the general principles of single-cell 'omics' and basics about the platforms (\~15 - 20 minutes)
-
 ------------------------------------------------------------------------
 
 ## 1. FASTQ Files, genome alignments, and deconvolution of cells
 
-This workshop provides an overview of key quality control (QC) metrics and processing steps in the initial steps of single-cell transcriptomic data analysis. While detailed tutorials for processing FASTQ files, performing genome alignments, and deconvoluting cells are available through various resources, we'll focus on understanding the fundamental QC metrics and data structures.
+This module of the CSTMI workshop provides an overview of key quality control (QC) metrics and pre-processing steps in the initial analysis of single-cell transcriptomic data [beginning after alignment to a reference genome]{.underline}. Detailed tutorials for processing raw BCL and FASTQ files, performing genome alignments, and deconvoluting cells are available through various resources, we will focus on understanding what is captured and represented in single-cell data.
 
-***Links to alignment preliminary analysis tutorials:***
+*See below for links to alignment and preliminary analysis tutorials:*
 
+::: {style="border: 2px solid forestgreen; background-color"}
 -   Vendor-specific pipeline resources (e.g., [10X Genomics](https://www.10xgenomics.com/support/software/cell-ranger/latest/tutorials/cr-tutorial-in))
 
 -   [Galaxy](https://training.galaxyproject.org/training-material/topics/single-cell/tutorials/scrna-preprocessing/tutorial.html)
 
 -   Google colab hands-on experience ([*under constructio*n]{.underline})
+:::
+
+Most of these `pipeline` will provide a summary report such as this [10X Genomics report](https://cf.10xgenomics.com/samples/cell-exp/7.0.1/SC3pv3_GEX_Human_PBMC/SC3pv3_GEX_Human_PBMC_web_summary.html) or this one from [Parse Biosciences](https://cdn.parsebiosciences.com/pbmc/v2-vs-v3/v3-all-sample_analysis_summary.html). These reports provide the most basic information to assess the quality of the data starting with the [*knee plot*]{.underline}.
 
 ### 1.1. Understanding the 'knee plot'
 
@@ -34,6 +36,8 @@ The knee plot visually depicts how a threshold is set to differentiate between c
 Interpreting the knee plot involves identifying this knee point. A distinct knee suggests successful separation, while the absence of a clear knee could indicate issues such as low RNA integrity or high ambient RNA contamination.
 
 [![Figure from https://isoseq.how/umi/cell-calling.html](images/clipboard-572921448.png){style="border:1px solid #000000; padding:3px; margin:2px" width="676"}](https://isoseq.how/umi/cell-calling.html)
+
+Now that we have a general idea of what to look for in a summary report, lets use real data to start exploring more advanced QC metrics which require additional analysis steps.
 
 ------------------------------------------------------------------------
 
@@ -141,6 +145,52 @@ This histogram shows that the number of mRNA transcripts detected in each cell r
 -   **Technical variability:** Sequencing depth, assay kits, and other technical factors may contribute to these differences.
 
 [*The zero-inflation question*]{.underline}*: In the early days of scRNAseq it was a widely accepted that data was zero-inflated, i.e., it had more zero's than it should because of technical challenges. Today, we better understand that the large number of zero's are not only technical, but in fact does reflect true biology as well. Here are some interesting papers on the topic: [Jiang et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5)*
+
+#### 3.3b. Another way to look at depth
+
+![](images/newplot.png){width="440"}
+
+![](images/newplot (1).png){width="419"}
+
+### 3.4. Common Storage Formats
+
+#### 3.4a. Sparse tables (raw)
+
+We previously mentioned that single-cell/nuclei transcriptomic data has a lot of zeros. Lets actually look at the count distribution so you can see:
+
+```{r}
+# We wan to collapse all the values into a vector of values
+mat_values <- as.vector(raw_counts)
+
+# Plot histogram
+hist(mat_values, main = "Histogram of Matrix Values", xlab = "Value", ylab = "Frequency", breaks = 600, xlim = c(0,10))
+```
+
+This is why you will almost always find raw scRNAseq data saved as a `.mtx` (sparse matrix) file or format.
+
+```{r}
+download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Emtx%2Egz', './downloads/matrix.mtx.gz')
+system("gunzip ./downloads/matrix.mtx.gz")
+
+download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Ebarcodes%2Etsv%2Egz', './downloads/barcodes.tsv.gz')
+system("gunzip ./downloads/barcodes.tsv.gz")
+
+download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Egenes%2Etsv%2Egz', './downloads/genes.tsv.gz')
+system("gunzip ./downloads/genes.tsv.gz")
+```
+
+```{r}
+mtx <- read.csv('./downloads/matrix.mtx')
+head(mtx)
+```
+
+#### 3.4b. Seurat object
+
+#### 3.4c. SingleCellExperiment
+
+#### 3.4d. H5AD (Python)
+
+This workshop will not go into python resources, but it is imporant to note that Python and R are the two most common programming languages for single-cell transcriptomic analysis and it is not uncommon to have to use both. The H5ad file format is similar to the Seurat object and SingleCellExperiment object in the sense that it stores the different components of the data in an organized manner.
 
 ------------------------------------------------------------------------
 

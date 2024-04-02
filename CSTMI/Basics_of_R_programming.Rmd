@@ -31,7 +31,7 @@ You will also want to set this downloaded folder as your *working directory*. Cl
 
 ## 2. Let's start with some simple code!
 
-### Math and calculations
+### 2.1. Math and calculations
 
 A common task is to perform simple and/or complex calculations. Let's estimate how many time a heart beats over a single day.
 
@@ -49,7 +49,7 @@ bpm * min
 **Answer:** Did you get 115200?
 :::
 
-### Assigning variables
+### 2.2. Assigning variables
 
 Next we will [assign variables]{.underline}. In programming, this means storing a value or data in a named storage location so that it can later be used within the program.
 
@@ -79,7 +79,7 @@ Nothing came out! Don't worry, it is just saved to the variable named `total_bea
 print(total_beats)
 ```
 
-### Data types
+### 2.3. Data types
 
 There are 9 major type of data types in R:
 

@@ -8,3 +8,41 @@ output: html_document
 *link to powerpoint slides:* A power point presentation will describe the general principles of single-cell 'omics' and basics about the platforms (\~15 - 20 minutes)
 
 ------------------------------------------------------------------------
+
+Cells communicate through various mechanisms including chemical signals, physical properties (e.g., mechanotransduction), secreted proteins, and other protein-protein interactions.
+
+![](images/Untitled%20(7)-01.png)
+
+The analysis of cell-cell signaling from single-cell transcriptomic is based on the broad understandings/assumption that [genes encode both ligands and receptors]{.underline} and sometimes, that activation of a signaling pathway drives and transcriptomic response, both of which can be detected as mRNA expression in individual cells.
+
+------------------------------------------------------------------------
+
+## 0. Setting up the R environment
+
+```{r}
+library(CellChat)
+```
+
+## 1. Determining *known* cell-cell communication signals
+
+Cell-cell communication analysis tools rely on *a priori* knowledge of interactions. This means that they need to have access to reliable data which represents true and biologically meaningful interactions. Therefore, many of these tools obtain their information from shared source (*e.g.*, KEGG, Reactome, STRING). Nevertheless, there is a lot of heterogeneity in the interactions which are captured across various tools which is explored in further depth by [Dimitrov et al. (2024)](https://www.nature.com/articles/s41467-022-30755-0).
+
+![Similarity between the different resources based on the interactions (Jaccard Index) from Dimitrov, D., Türei, D., Garrido-Rodriguez, M. et al. Comparison of methods and resources for cell-cell communication inference from single-cell RNA-Seq data. Nat Commun 13, 3224 (2022). <https://doi.org/10.1038/s41467-022-30755-0>](images/clipboard-747365050.png)
+
+Lets take a look at some of the protein-protein interactions which are included in the CellChat database, one of the many commonly use cell-cell communication analysis tools.
+
+```{r}
+print(head(CellChatDB.human$interaction))
+```
+
+This is an example of how these tools curate interactions for subsequent analyses, identifying the ligand(s), receptor(s), type of signaling, cellular location, and gene symbols.
+
+## 2. Identification of enriched/significant cell-cell interactions
+
+### Choosing the types of interactions of interest
+
+### Another thing
+
+### Another thing 2
+
+## 3. Visualization and interpretation

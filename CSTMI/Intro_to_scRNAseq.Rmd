@@ -9,7 +9,7 @@ output: html_notebook
 
 ## 1. FASTQ Files, genome alignments, and deconvolution of cells
 
-This module of the CSTMI workshop provides an overview of key quality control (QC) metrics and pre-processing steps in the initial analysis of single-cell transcriptomic data [beginning after alignment to a reference genome]{.underline}. Detailed tutorials for processing raw BCL and FASTQ files, performing genome alignments, and deconvoluting cells are available through various resources, we will focus on understanding what is captured and represented in single-cell data.
+This module of the CSTMI workshop provides an overview of key quality control (QC) metrics and pre-processing steps in the initial analysis of single-cell transcriptomic data [beginning after alignment to a reference genome]{.underline}. Detailed tutorials for processing raw BCL and FASTQ files, performing genome alignments, and deconvoluting cells from empty GEMs/wells are available through various resources, we will focus on understanding what is captured and represented in single-cell data.
 
 *See below for links to alignment and preliminary analysis tutorials:*
 
@@ -21,7 +21,7 @@ This module of the CSTMI workshop provides an overview of key quality control (Q
 -   Google colab hands-on experience ([*under constructio*n]{.underline})
 :::
 
-Most of these `pipeline` will provide a summary report such as this [10X Genomics report](https://cf.10xgenomics.com/samples/cell-exp/7.0.1/SC3pv3_GEX_Human_PBMC/SC3pv3_GEX_Human_PBMC_web_summary.html) or this one from [Parse Biosciences](https://cdn.parsebiosciences.com/pbmc/v2-vs-v3/v3-all-sample_analysis_summary.html). These reports provide the most basic information to assess the quality of the data starting with the [*knee plot*]{.underline}.
+Most of these `pipelines` will provide a summary report such as this [10X Genomics report](https://cf.10xgenomics.com/samples/cell-exp/7.0.1/SC3pv3_GEX_Human_PBMC/SC3pv3_GEX_Human_PBMC_web_summary.html) or this one from [Parse Biosciences](https://cdn.parsebiosciences.com/pbmc/v2-vs-v3/v3-all-sample_analysis_summary.html). These reports provide the most basic information to assess the quality of the data starting with the [*knee plot*]{.underline}.
 
 ### 1.1. Understanding the 'knee plot'
 
@@ -31,11 +31,11 @@ Upon receiving aligned single-cell/nuclei sequencing data, one of the initial pl
 
 The knee plot visually depicts how a threshold is set to differentiate between cell barcodes and background noise. In platforms like 10X Genomics, cells within GEMs produce a larger number of unique mRNA molecules (UMIs) compared to empty GEMs. The knee plot typically shows a sudden drop (knee) in UMIs, indicating the separation between GEMs containing cells and those lacking them.
 
-[![Figure from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. https://doi.org/10.1007/978-1-0716-2756-3_1](images/clipboard-4280699880.png){style="border:1px solid #000000; padding:3px; margin:2px" width="642"}](https://link.springer.com/protocol/10.1007/978-1-0716-2756-3_1)
+[![Figure from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. https://doi.org/10.1007/978-1-0716-2756-3_1](figures/10x-dropseq-example.png){style="border:1px solid #000000; padding:3px; margin:2px" width="564"}](https://link.springer.com/protocol/10.1007/978-1-0716-2756-3_1)
 
 Interpreting the knee plot involves identifying this knee point. A distinct knee suggests successful separation, while the absence of a clear knee could indicate issues such as low RNA integrity or high ambient RNA contamination.
 
-[![Figure from https://isoseq.how/umi/cell-calling.html](images/clipboard-572921448.png){style="border:1px solid #000000; padding:3px; margin:2px" width="676"}](https://isoseq.how/umi/cell-calling.html)
+[![Figure from https://isoseq.how/umi/cell-calling.html](figures/kneeplot.png){style="border:1px solid #000000; padding:3px; margin:2px" width="553"}](https://isoseq.how/umi/cell-calling.html)
 
 Now that we have a general idea of what to look for in a summary report, lets use real data to start exploring more advanced QC metrics which require additional analysis steps.
 
@@ -81,7 +81,7 @@ print(seurat_object)
 
 To better understand how to work with single-cell/nuclei RNA sequencing data we will take a deep dive into how datasets are *typically* structured. In the diagram below we illustrate how droplet-based scRNAseq approaches separate cells and their mRNAs. But how does this translate into [***data***]{.underline}?
 
-![Generated using biorender.com](images/clipboard-2793142743.png){style="border:1px solid #000000; padding:3px; margin:2px" width="403"}
+![Generated using biorender.com](figures/cellGEMs.png){style="border:1px solid #000000; padding:3px; margin:2px" width="469"}
 
 ### 3.1. The Gene x Cell Matrix
 
@@ -99,7 +99,7 @@ print(raw_counts[1:4,1:4])
 
 **Columns:** The columns represent a unique `barcode`. As we can see below, this `barcode` marks an individual cell which is how we can identify each one. So in this object, the columns are the cells
 
-![Generated in biorender.com and adapted from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. <https://doi.org/10.1007/978-1-0716-2756-3_1>](images/clipboard-1606285495.png){style="border:1px solid #000000; padding:3px; margin:2px" width="826"}
+![Generated in biorender.com and adapted from Danielski, K. (2023). Guidance on Processing the 10x Genomics Single Cell Gene Expression Assay. In: Calogero, R.A., Benes, V. (eds) Single Cell Transcriptomics. Methods in Molecular Biology, vol 2584. Humana, New York, NY. <https://doi.org/10.1007/978-1-0716-2756-3_1>](figures/ReadOverview.png){style="border:1px solid #000000; padding:3px; margin:2px" width="834"}
 
 **Rows:** We see that the first few rows have names such as *RP11-206L10.9.* A quick *google* search will tell you that this is a human gene (Ensembl ID - ENSG00000237491). So we see in this object that the rows represent the genes.
 
@@ -144,13 +144,17 @@ This histogram shows that the number of mRNA transcripts detected in each cell r
 
 -   **Technical variability:** Sequencing depth, assay kits, and other technical factors may contribute to these differences.
 
-[*The zero-inflation question*]{.underline}*: In the early days of scRNAseq it was a widely accepted that data was zero-inflated, i.e., it had more zero's than it should because of technical challenges. Today, we better understand that the large number of zero's are not only technical, but in fact does reflect true biology as well. Here are some interesting papers on the topic: [Jiang et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5)*
+[*The zero-inflation debate*]{.underline}*: In the early days of scRNAseq it was a widely accepted that data was zero-inflated, i.e., it had more zero's than it should because of technical challenges. Today, we better understand that the large number of zero's are not only technical, but in fact does reflect true biology as well. The following manuscript delves deeper into the debate: [Jiang et al., 2022](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02601-5)*
 
 #### 3.3b. Another way to look at depth
 
-![](images/newplot.png){width="440"}
+Sequencing depth ultimately drives the ability to detect individual genes in a cell or sample (bulk RNA seq). As more reads are performed on a sample, the probability of capturing a lower abundance gene increases. Therefore, sequencing depth can have a significant impact on the end results of your sequencing results.
 
-![](images/newplot (1).png){width="419"}
+*So why not sequence as deep as possibe?* As with anything, we need to balance cost with value. The following figures are standard outputs from scRNAseq reports including those linked above.
+
+![](images/Untitled%20(8).png){style="border:1px solid #000000; padding:3px; margin:2px" width="708"}
+
+As you can see, the more reads we have per cell, the smaller the slop for capturing new genes gets. Therefore, the difference between capturing 80% of genes and 100% could mean 2, 10, or even \>100X the amount of sequencing. Is it truly worth it for capturing a gene who expression is so low? This is why we limit our depth for sequencing and why most datasets produced with the sample platform will tend to detect a similar number of genes.
 
 ### 3.4. Common Storage Formats
 
@@ -168,40 +172,106 @@ hist(mat_values, main = "Histogram of Matrix Values", xlab = "Value", ylab = "Fr
 
 This is why you will almost always find raw scRNAseq data saved as a `.mtx` (sparse matrix) file or format.
 
+Here we will download publicly accessible sparse matrices from the [Gene Expression Omnibus](https://www.ncbi.nlm.nih.gov/geo), an excellent resource for obtaining raw data if you want to reuse and reanalyze existing data. This dataset is from [single-nuclei RNA sequencing of livers from mice treated with the environmental contaminant 2,3,7,8-tetrachlorodibenzo-*p*-dioxin (TCDD)](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE184506).
+
 ```{r}
-download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Emtx%2Egz', './downloads/matrix.mtx.gz')
+#download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Emtx%2Egz', './downloads/matrix.mtx.gz')
 system("gunzip ./downloads/matrix.mtx.gz")
 
-download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Ebarcodes%2Etsv%2Egz', './downloads/barcodes.tsv.gz')
+#download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Ebarcodes%2Etsv%2Egz', './downloads/barcodes.tsv.gz')
 system("gunzip ./downloads/barcodes.tsv.gz")
 
-download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Egenes%2Etsv%2Egz', './downloads/genes.tsv.gz')
+#download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE184506&format=file&file=GSE184506%5Fsct%2Egenes%2Etsv%2Egz', './downloads/genes.tsv.gz')
 system("gunzip ./downloads/genes.tsv.gz")
 ```
 
 ```{r}
-mtx <- read.csv('./downloads/matrix.mtx')
-head(mtx)
+# Read the first few lines of the file
+lines <- readLines('./downloads/matrix.mtx', n = 10)
+
+# Print the lines
+cat(lines, sep = "\n")
 ```
+
+As you can see, there is not a zero in sight here. After you read the first 2 summary lines you can see the following structure:
+
+| Feature/Gene                                   | Barcode/Cell                                      | Count/Value                                |
+|------------------------|--------------------------|----------------------|
+| Refers to the row number in the genes.tsv file | Refers to the row number in the barcodes.tsv file | Include all non-zero values of the dataset |
+
+Let's see what this is here
+
+```{r}
+# Read the specific line of the file
+readLines('./downloads/genes.tsv', n = 15)[15]
+
+# Read the specific line of the file
+readLines('./downloads/barcodes.tsv', n = 1)[1]
+```
+
+From here we can see that the first row of data in the `mtx` file represent the gene ***Sntg1*** for the cell with barcode ***AAACCCACAACTTCTT_1***.
 
 #### 3.4b. Seurat object
 
+[![Image from https://sib-swiss.github.io/single-cell-training/day1/day1-2_analysis_tools_qc.html](figures/seurat_object.png){style="border:1px solid #000000; padding:3px; margin:2px" width="613"}](https://sib-swiss.github.io/single-cell-training/day1/day1-2_analysis_tools_qc.html)
+
+Seurat objects are probably the most commonly used to store and organize scRNAseq data for R users. So far this is what we have used for the published PBMC data which we imported in *Section 2*. Let's take another closer look at this object:
+
+```{r}
+print(slotNames(seurat_object)) # Lets examine all the slots
+```
+
+There is a lot of information, but the ones you will most commonly use if you do single-cell analyses in R are `assays`, `meta.data`, and `reductions`
+
+-   ***Assays*** will hold the count data
+
+-   ***Meta.data*** will hold the metadata for each individual cell/nuclei
+
+-   ***Reductions*** will hold the dimension reductions for visualizations
+
 #### 3.4c. SingleCellExperiment
 
-#### 3.4d. H5AD (Python)
+Another common format in R are SingleCellExperiments. They contain the same information, but are organized in a different manner.
+
+[![image from https://bioconductor.org/books/3.13/OSCA.intro/the-singlecellexperiment-class.html](figures/SingleCellExperiment.png){style="border:1px solid #000000; padding:3px; margin:2px" width="618"}](https://bioconductor.org/books/3.13/OSCA.intro/the-singlecellexperiment-class.html)
+
+First, let's convert our seurat object to SingleCellExperiment. Most formats can easily be interchanged:
+
+```{r}
+sce = as.SingleCellExperiment(seurat_object)
+```
+
+Next, lets see what the structure looks like:
+
+```{r}
+print(sce)
+```
+
+Here we can see:
+
+-   **rownames** and rowData contain the gene information and metadata
+
+-   **colnames** and colData contain the cell information and metadata
+
+-   **assays** here also hold the count data
+
+We can examine the pieces of data such as the cell metadata as follows:
+
+```{r}
+print(colData(sce))
+```
+
+#### 3.4d. AnnData/H5AD (Python)
 
 This workshop will not go into python resources, but it is imporant to note that Python and R are the two most common programming languages for single-cell transcriptomic analysis and it is not uncommon to have to use both. The H5ad file format is similar to the Seurat object and SingleCellExperiment object in the sense that it stores the different components of the data in an organized manner.
+
+[![Image from: https://www.sc-best-practices.org/introduction/analysis_tools.html](figures/anndata.jpg){style="border:1px solid #000000; padding:3px; margin:2px" width="430"}](https://www.sc-best-practices.org/introduction/analysis_tools.html)
 
 ------------------------------------------------------------------------
 
 ## 4. Assessing data quality
 
 Any analysis, no matter of size, should undergo rigorous QC. When it comes to single-cell transcriptomic data, there are several computational tools that help you in the process from enabling visualizations to performing a panel of QC tests and reporting several different metrics for the end user to evaluate. A list of just some of these tools can be found [here](https://www.scrna-tools.org/tools?sort=name&cats=QualityControl).
-
-```         
-https://www.scrna-tools.org/
-https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html
-```
 
 Let's go through some of the most common QC metrics, what to they mean, and why do they matter?
 
@@ -291,7 +361,7 @@ Interestingly, these are not correlated at all. Prior to filtering, these values
 
 As with any single-cell transcriptomic tool, there are dozens, if not more, options for removal of abient RNA. Generally, the concept for ambient RNA removal is the same - substract genes which are present in the *empty* GEMs/wells from those which are found to have cells. Other techniques such as combinatorial barcoding approaches have to make different assumptions.
 
-![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](images/clipboard-2328202483.png){width="643"}
+![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](figures/ambientRNA.png){width="520"}
 
 [SoupX](https://academic.oup.com/gigascience/article/9/12/giaa151/6049831) is one example of a tool which cleans up the *soup* (floating ambient RNA) from cells. This tools uses the most raw format of data which is generate before a threshold is set on the knee plot discussed above. For 10X Genomics these are stored in the `raw_feature_bc_matrix` and `filtered_feature_bc_matrix` folders.
 
@@ -301,7 +371,7 @@ This tutorial will not go through the entire ambient RNA removal workflow. Excel
 
 Another common challenge with using single-cell transcriptomic platforms is one that can affect most single-cell based techniques including flow cytometry - doublets. These can be a result of cells sticking to each other or being too close to each other during the *sorting*, and the rate is typically a function of the total number of cells examined (more cells results in more doublets).
 
-![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](images/clipboard-384387352.png){width="1139"}
+![<https://www.sc-best-practices.org/preprocessing_visualization/quality_control.html>](figures/Doublets.png){width="996"}
 
 *Note: We will discuss dimension reduction which is central to this approach in a later module.*
 

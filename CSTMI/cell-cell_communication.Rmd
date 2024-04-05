@@ -11,16 +11,49 @@ output: html_document
 
 Cells communicate through various mechanisms including chemical signals, physical properties (e.g., mechanotransduction), secreted proteins, and other protein-protein interactions.
 
-![](images/Untitled%20(7)-01.png)
+![Generated using Biorender.com](images/Untitled%20(7)-01.png){width="586"}
 
-The analysis of cell-cell signaling from single-cell transcriptomic is based on the broad understandings/assumption that [genes encode both ligands and receptors]{.underline} and sometimes, that activation of a signaling pathway drives and transcriptomic response, both of which can be detected as mRNA expression in individual cells.
+The analysis of cell-cell signaling from single-cell transcriptomic is based on the broad understandings/assumption that [genes encode both ligands and receptors,]{.underline} and sometimes, that activation of a signaling pathway drives and transcriptomic response, both of which can be detected as mRNA expression in individual cells.
 
 ------------------------------------------------------------------------
 
 ## 0. Setting up the R environment
 
 ```{r}
-library(CellChat)
+suppressPackageStartupMessages({
+  library(CellChat)  
+  library(nichenetr)
+})
+
+```
+
+**Download pre-processed data for liver from mice treated with TCDD**
+
+```{r}
+options(timeout = max(6000, getOption("timeout")))
+download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE148339&format=file&file=GSE148339%5Fliver%2Eintegrated%2Efinal%2ERData%2Egz', './downloads/GSE148339_liver.integrated.final.RData.gz')
+system("gunzip ./downloads/GSE148339_liver.integrated.final.RData.gz")
+```
+
+**Load the downloaded object**
+
+```{r}
+liver_seurat_data = readRDS('./downloads/GSE148339_liver.integrated.final.RData')
+liver_seurat_data = UpdateSeuratObject(liver_seurat_data)
+```
+
+Next we will take a look at the data to make sure it is loaded properly and that we understand the dataset.
+
+```{r}
+DimPlot(liver_seurat_data, group.by = 'celltype', label = TRUE) + NoLegend()
+```
+
+For this workshop we will focus on a smaller subset of the data (only endothelial cells and stellate cells).
+
+```{r}
+endo_stellate = subset(liver_seurat_data, idents = c("Endothelial Cells", "Stellate Cells"))
+nonzero_rows <- which(rowSums(as.matrix(endo_stellate@assays$RNA@counts)) != 0)
+endo_stellate = endo_stellate[nonzero_rows, ]
 ```
 
 ## 1. Determining *known* cell-cell communication signals
@@ -36,6 +69,142 @@ print(head(CellChatDB.human$interaction))
 ```
 
 This is an example of how these tools curate interactions for subsequent analyses, identifying the ligand(s), receptor(s), type of signaling, cellular location, and gene symbols.
+
+We can also look at tools such as NicheNet, which include not only cell-cell interactions, but the subsequent signaling cascade as well. We can load the prior knowledge (PK) as follows:
+
+```{r}
+# Load PK
+ligand_target_matrix <- readRDS(url("https://zenodo.org/record/7074291/files/ligand_target_matrix_nsga2r_final.rds"))
+lr_network <- readRDS(url("https://zenodo.org/record/7074291/files/lr_network_human_21122021.rds"))
+```
+
+Next we can examine the database of ligand-receptor interactions. We will filter for TGFB1 as the ligand, just for simplicity.
+
+```{r}
+lr_network %>% filter(from == "TGFB1")
+```
+
+We can see a structure that is very similar to CellChat. However, NicheNet relies on a second piece of information - the probabilites that certain genes are induced in response to activation of a specific receptor. Here is TGFBR2 for example:
+
+```{r}
+ligand_target_matrix['TGFBR2', 1:4]
+```
+
+## 2. Steady-state and differential *inter*cellular communication
+
+As with any analysis, whether its in the lab or purely computational, it is important to know what is the right tool to answer your question/test your hypothesis. *Are you looking to characterize cell-cell communication in a tissue without any treatment or perturbation, or are you looking to test the effect of a perturbation on cell-cell communication?*
+
+### 2.1. Steady state cell-cell communication
+
+Expression based cell-cell communication analysis tools, including the popular **CellPhoneDB()** and **CellChat()** tools, were primarily developed to infer ligand-receptor interactions within cells that are at a steady state. Tools such as CellChat have also developed condition comparison methods. These will be discussed later.
+
+For the exact algorithms which each of these tools use, someone should always review the original publication. However, many of these tools share a similar overall concept which we will illustrate using the code below.
+
+```{r}
+# Load required libraries
+library(ggplot2)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Generate simulated data for interactionA and interactionB
+n_samples <- 100
+
+# Interaction A: Samples from two populations with very different means
+interactionA_pop1 <- rnorm(n_samples, mean = 5, sd = 1)
+interactionA_pop2 <- rnorm(n_samples, mean = 10, sd = 1)
+interactionA <- c(interactionA_pop1, interactionA_pop2)
+
+# Interaction B: Samples from two populations with the same means
+interactionB_pop1 <- rnorm(n_samples, mean = 15, sd = 2)
+interactionB_pop2 <- rnorm(n_samples, mean = 15, sd = 3)
+interactionB <- c(interactionB_pop1, interactionB_pop2)
+
+# Function to shuffle data
+shuffle_data <- function(data) {
+  shuffled_data <- sample(data)
+  return(shuffled_data)
+}
+
+# Function to create violin plot
+create_violin_plot <- function(original_data, shuffled_data, interaction_name) {
+  original_df <- data.frame(Group = rep(c("Pop1", "Pop2"), each = n_samples),
+                            Value = c(original_data, shuffled_data),
+                            Type = rep(c("Original", "Shuffled"), each = length(original_data)))
+  
+  ggplot(original_df, aes(x = Group, y = Value, fill = Type)) +
+    geom_violin() +
+    labs(title = interaction_name, x = "Group", y = "Value", fill = "Type") +
+    theme_minimal()
+}
+
+# Plot violin plots for interactionA
+violin_plot_interactionA <- create_violin_plot(interactionA, shuffle_data(interactionA), "Interaction A")
+
+# Plot violin plots for interactionB
+violin_plot_interactionB <- create_violin_plot(interactionB, shuffle_data(interactionB), "Interaction B")
+
+# Plot violin plots
+gridExtra::grid.arrange(violin_plot_interactionA, violin_plot_interactionB, nrow = 1)
+
+
+
+```
+
+Note how interaction A shows clear differences in the original data which is lost after shuffling. Alternatively, interaction B is similar whether it is shuffled or not. In this illustrative example, *interaction A* would likely have been considered significant while *interaction B* would not have been even though it is more highly expressed.
+
+**Run an example**
+
+### 2.2. Perturbation of cell-cell communication
+
+#### 2.2a. Enrichment-like approach (NicheNet)
+
+[NicheNet](https://github.com/saeyslab/nichenetr) is unique among cell-cell communication in the sense that it does require expression data as input, and it considers downstream effectors such as transcription factors and responses.
+
+Let's consider the question; what ligand-receptor interactions are induced by treatment with chemical X in multiple immune cell types (e.g., T Cells, B Cells, and Macrophages) coming from a source cell type (e.g., hepatocytes). Here we would obtain the following inputs:
+
+1.  A list of ligands expressed in source/sender cells and a list of receptors in the receiving cells. This list is used to refine the interactions of interest to those that are possible based on gene expression
+
+    ```{r}
+    ligands_expressed = intersect(toupper(rownames(endo_stellate)), lr_network$from) 
+    receptors_expressed = intersect(toupper(rownames(endo_stellate)), lr_network$to)
+      
+    potential_interactions <- lr_network %>% 
+      filter(from %in% ligands_expressed & to %in% receptors_expressed) %>%
+      pull(from) %>% unique()
+    ```
+
+2.  A list of all genes expressed in the receiver cell type:
+
+    ```{r}
+    background_genes = toupper(rownames(endo_stellate))
+    ```
+
+3.  A list of genes which are induced from a treatment or condition:
+
+    ```{r}
+    DEAnalysis = FindMarkers(endo_stellate, ident.1 = 'Endothelial Cells', ident.2 = 'Stellate Cells', min.pct = 0.5, logfc.treshold = log(2), min.diff.pct = 0.25)
+    geneset_oi = toupper(rownames(DEAnalysis %>% filter(avg_log2FC > 0))) # geneset of interest
+    ```
+
+Next we run the analysis of ligand activity and output the top 10 inferred active ligands
+
+```{r}
+ligand_activities <- predict_ligand_activities(
+  geneset = geneset_oi, 
+  background_expressed_genes = background_genes,
+  ligand_target_matrix = ligand_target_matrix,
+  potential_ligands = ligands_expressed)
+
+ligand_activities <- ligand_activities %>% 
+  arrange(-aupr) %>% 
+  mutate(rank = rank(desc(aupr)))
+
+# show top10 ligand activities
+head(ligand_activities, n=10)
+```
+
+#### 2.2b. CellChat
 
 ## 2. Identification of enriched/significant cell-cell interactions
 

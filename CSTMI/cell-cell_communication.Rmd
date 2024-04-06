@@ -23,6 +23,7 @@ The analysis of cell-cell signaling from single-cell transcriptomic is based on 
 suppressPackageStartupMessages({
   library(CellChat)  
   library(nichenetr)
+  library(Seurat)
 })
 
 ```
@@ -54,6 +55,7 @@ For this workshop we will focus on a smaller subset of the data (only endothelia
 endo_stellate = subset(liver_seurat_data, idents = c("Endothelial Cells", "Stellate Cells"))
 nonzero_rows <- which(rowSums(as.matrix(endo_stellate@assays$RNA@counts)) != 0)
 endo_stellate = endo_stellate[nonzero_rows, ]
+endo_stellate@meta.data$celltype = factor(endo_stellate@meta.data$celltype, levels=c('Endothelial Cells', 'Stellate Cells'))
 ```
 
 ## 1. Determining *known* cell-cell communication signals
@@ -62,13 +64,32 @@ Cell-cell communication analysis tools rely on *a priori* knowledge of interacti
 
 ![Similarity between the different resources based on the interactions (Jaccard Index) from Dimitrov, D., Türei, D., Garrido-Rodriguez, M. et al. Comparison of methods and resources for cell-cell communication inference from single-cell RNA-Seq data. Nat Commun 13, 3224 (2022). <https://doi.org/10.1038/s41467-022-30755-0>](images/clipboard-747365050.png)
 
-Lets take a look at some of the protein-protein interactions which are included in the CellChat database, one of the many commonly use cell-cell communication analysis tools.
+### 1.1. Databases and knowledgebases
+
+As was just highlighted, cell-cell communication analysis is dependent on the underlying database/knowledgebase of existing interactions. Lets take a look at some of the protein-protein interactions which are included in the CellChat database, one of the many commonly use cell-cell communication analysis tools.
 
 ```{r}
 print(head(CellChatDB.human$interaction))
 ```
 
-This is an example of how these tools curate interactions for subsequent analyses, identifying the ligand(s), receptor(s), type of signaling, cellular location, and gene symbols.
+This is an example of how these tools curate interactions for subsequent analyses, identifying the ligand(s), receptor(s), type of signaling, cellular location, and gene symbols. However, its important to note that this database is based on [*known human interactions*]{.underline}.
+
+```{r}
+print(paste0(
+'Size of human database: ',
+nrow(CellChatDB.human$interaction)
+))
+
+print(paste0(
+'Size of mouse database: ',
+nrow(CellChatDB.mouse$interaction)
+))
+
+print(paste0(
+'Size of zebrafish database: ',
+nrow(CellChatDB.zebrafish$interaction)
+))
+```
 
 We can also look at tools such as NicheNet, which include not only cell-cell interactions, but the subsequent signaling cascade as well. We can load the prior knowledge (PK) as follows:
 
@@ -96,9 +117,9 @@ As with any analysis, whether its in the lab or purely computational, it is impo
 
 ### 2.1. Steady state cell-cell communication
 
-Expression based cell-cell communication analysis tools, including the popular **CellPhoneDB()** and **CellChat()** tools, were primarily developed to infer ligand-receptor interactions within cells that are at a steady state. Tools such as CellChat have also developed condition comparison methods. These will be discussed later.
+Expression based cell-cell communication analysis tools, including the popular [CellPhoneDB](https://doi.org/10.1038/s41596-020-0292-x) and [CellChat](https://doi.org/10.1038/s41467-021-21246-9) ools, were primarily developed to infer ligand-receptor interactions within cells that are at a steady state. Tools such as CellChat have also developed condition comparison methods. These will be discussed later.
 
-For the exact algorithms which each of these tools use, someone should always review the original publication. However, many of these tools share a similar overall concept which we will illustrate using the code below.
+For the exact algorithms which each of these tools use, someone should always review the original publication. [*However, many of these tools share a similar overall concept which we will illustrate using the code below.*]{.underline}
 
 ```{r}
 # Load required libraries
@@ -153,7 +174,35 @@ gridExtra::grid.arrange(violin_plot_interactionA, violin_plot_interactionB, nrow
 
 Note how interaction A shows clear differences in the original data which is lost after shuffling. Alternatively, interaction B is similar whether it is shuffled or not. In this illustrative example, *interaction A* would likely have been considered significant while *interaction B* would not have been even though it is more highly expressed.
 
-**Run an example**
+#### 2.1a. CellChat example
+
+```{r}
+cellChat <- createCellChat(object = endo_stellate, group.by = "celltype", assay = "RNA")
+CellChatDB.use <- CellChatDB.mouse
+cellchat@DB <- CellChatDB.use
+```
+
+```{r}
+# subset the expression data of signaling genes for saving computation cost
+cellchat <- subsetData(cellchat) # This step is necessary even if using the whole database
+cellchat <- identifyOverExpressedGenes(cellchat)
+cellchat <- identifyOverExpressedInteractions(cellchat)
+```
+
+```{r}
+cellchat <- computeCommunProb(cellchat, type = "triMean")
+cellchat <- filterCommunication(cellchat, min.cells = 10)
+cellchat <- computeCommunProbPathway(cellchat)
+cellchat <- aggregateNet(cellchat)
+```
+
+```{r}
+groupSize <- as.numeric(table(cellchat@idents))
+
+par(mfrow = c(1,2), xpd=TRUE)
+netVisual_circle(cellchat@net$count, vertex.weight = groupSize, weight.scale = T, label.edge= F, title.name = "Number of interactions")
+netVisual_circle(cellchat@net$weight, vertex.weight = groupSize, weight.scale = T, label.edge= F, title.name = "Interaction weights/strength")
+```
 
 ### 2.2. Perturbation of cell-cell communication
 
@@ -161,7 +210,7 @@ Note how interaction A shows clear differences in the original data which is los
 
 [NicheNet](https://github.com/saeyslab/nichenetr) is unique among cell-cell communication in the sense that it does require expression data as input, and it considers downstream effectors such as transcription factors and responses.
 
-Let's consider the question; what ligand-receptor interactions are induced by treatment with chemical X in multiple immune cell types (e.g., T Cells, B Cells, and Macrophages) coming from a source cell type (e.g., hepatocytes). Here we would obtain the following inputs:
+Let's consider the question; what ligand-receptor interactions are induced by treatment with chemical X in multiple immune cell types (*e.g.*, T Cells, B Cells, and Macrophages) coming from a source cell type (*e.g.*, hepatocytes). Here we would obtain the following inputs:
 
 1.  A list of ligands expressed in source/sender cells and a list of receptors in the receiving cells. This list is used to refine the interactions of interest to those that are possible based on gene expression
 
@@ -187,7 +236,7 @@ Let's consider the question; what ligand-receptor interactions are induced by tr
     geneset_oi = toupper(rownames(DEAnalysis %>% filter(avg_log2FC > 0))) # geneset of interest
     ```
 
-Next we run the analysis of ligand activity and output the top 10 inferred active ligands
+Next we run the analysis of ligand activity and output the top 10 inferred active ligands:
 
 ```{r}
 ligand_activities <- predict_ligand_activities(
@@ -206,7 +255,43 @@ head(ligand_activities, n=10)
 
 #### 2.2b. CellChat
 
-## 2. Identification of enriched/significant cell-cell interactions
+```{r}
+
+control_seurat <- subset(endo_stellate, subset = treatment == "CONTROL")
+treated_seurat <- subset(endo_stellate, subset = treatment == "TCDD")
+
+cellChat_control <- createCellChat(object = control_seurat, group.by = "celltype", assay = "RNA")
+cellChat_treated <- createCellChat(object = treated_seurat, group.by = "celltype", assay = "RNA")
+
+object.list <- list(CONTROL = cellChat_control, TCDD = cellChat_treated)
+
+for (cc in names(object.list)){
+  cellchat = object.list[[cc]]
+  CellChatDB.use = CellChatDB.mouse
+  cellchat@DB = CellChatDB.use
+  cellchat = subsetData(cellchat)
+  cellchat = identifyOverExpressedGenes(cellchat)
+  cellchat = identifyOverExpressedInteractions(cellchat)
+  cellchat = computeCommunProb(cellchat, type = "triMean")
+  cellchat = filterCommunication(cellchat, min.cells = 10)
+  cellchat = computeCommunProbPathway(cellchat)
+  cellchat = aggregateNet(cellchat)
+  object.list[[cc]] = cellchat
+  
+}
+
+cellchat <- mergeCellChat(object.list, add.names = names(object.list))
+
+```
+
+```{r}
+gg1 <- rankNet(cellchat, mode = "comparison", measure = "weight", sources.use = NULL, targets.use = NULL, stacked = T, do.stat = TRUE)
+gg2 <- rankNet(cellchat, mode = "comparison", measure = "weight", sources.use = NULL, targets.use = NULL, stacked = F, do.stat = TRUE)
+
+gg1 + gg2
+```
+
+## 2. Interpretation and visualization
 
 ### Choosing the types of interactions of interest
 
@@ -214,4 +299,4 @@ head(ligand_activities, n=10)
 
 ### Another thing 2
 
-## 3. Visualization and interpretation
+## 3. Advanced approaches

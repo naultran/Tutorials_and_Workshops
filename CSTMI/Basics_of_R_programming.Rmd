@@ -527,18 +527,6 @@ After you've run the complete tutorial R script you should have a new file in yo
 
 ------------------------------------------------------------------------
 
-## 6. Advanced data manipulation (Under Construction!)
-
-### 6.1. Wide vs. long table format
-
-### 6.2. Subsetting
-
-### 6.3 Summarizing the data
-
-------------------------------------------------------------------------
-
-## 7. Key takeaways for this Computational Systems Toxicology Modeling and Informatics (CSTMI) Workshop
-
 ## Additional Resources
 
 -   [An introduction to R from the R core team](chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://cran.r-project.org/doc/manuals/R-intro.pdf)

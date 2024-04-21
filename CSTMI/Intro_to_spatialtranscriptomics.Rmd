@@ -7,7 +7,7 @@ output: html_notebook
 
 ------------------------------------------------------------------------
 
-## 1. What is spatial transcriptomics? 
+## 1. What is spatial transcriptomics?
 
 ### 1.1. Basic principles of spatial transcriptomics
 
@@ -172,7 +172,7 @@ cat(lines, sep = "\n")
 As you can see, there is not a zero in sight here. After you read the first 2 summary lines you can see the following structure:
 
 | Feature/Gene                                   | Barcode/Cell                                      | Count/Value                                |
-|------------------------|--------------------------|----------------------|
+|------------------------------------------------|---------------------------------------------------|--------------------------------------------|
 | Refers to the row number in the genes.tsv file | Refers to the row number in the barcodes.tsv file | Include all non-zero values of the dataset |
 
 Let's see what this is here

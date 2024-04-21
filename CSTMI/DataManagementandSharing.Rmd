@@ -1,6 +1,7 @@
 ---
 title: "Data Management and Sharing"
 output: html_notebook
+---(1)
 ---
 
 # Data Management and Sharing
@@ -27,3 +28,19 @@ poor_data =
 ### Biomodels/CellML
 
 <file:///C:/Users/nault/Downloads/nbt1156.pdf> <https://www.nature.com/articles/nbt1156>
+
+```{r}
+# Load necessary libraries
+library(SBMLR)
+library(igraph)
+
+# Load SBML file
+sbml_file <- "C://Users/nault/Downloads/Reversible_Binding.sbml"  # Replace with the path to your SBML file
+sbml_model <- readSBML(sbml_file)
+summary(sbml_model)
+
+```
+
+```{r}
+
+```

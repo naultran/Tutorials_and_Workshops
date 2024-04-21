@@ -1787,11 +1787,28 @@ display: none;
 <h3>Biomodels/CellML</h3>
 <p><a href="file:///C:/Users/nault/Downloads/nbt1156.pdf" class="uri">file:///C:/Users/nault/Downloads/nbt1156.pdf</a> <a href="https://www.nature.com/articles/nbt1156" class="uri">https://www.nature.com/articles/nbt1156</a></p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBMb2FkIG5lY2Vzc2FyeSBsaWJyYXJpZXNcbmxpYnJhcnkoU0JNTFIpXG5saWJyYXJ5KGlncmFwaClcblxuIyBMb2FkIFNCTUwgZmlsZVxuc2JtbF9maWxlIDwtIFwiQzovL1VzZXJzL25hdWx0L0Rvd25sb2Fkcy9SZXZlcnNpYmxlX0JpbmRpbmcuc2JtbFwiICAjIFJlcGxhY2Ugd2l0aCB0aGUgcGF0aCB0byB5b3VyIFNCTUwgZmlsZVxuc2JtbF9tb2RlbCA8LSByZWFkU0JNTChzYm1sX2ZpbGUpXG5zdW1tYXJ5KHNibWxfbW9kZWwpXG5cbmBgYCJ9 -->
+<pre class="r"><code># Load necessary libraries
+library(SBMLR)
+library(igraph)
+
+# Load SBML file
+sbml_file &lt;- &quot;C://Users/nault/Downloads/Reversible_Binding.sbml&quot;  # Replace with the path to your SBML file
+sbml_model &lt;- readSBML(sbml_file)
+summary(sbml_model)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-chunk-end -->
 </div>
 </div>
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIkRhdGEgTWFuYWdlbWVudCBhbmQgU2hhcmluZyINCm91dHB1dDogaHRtbF9ub3RlYm9vaw0KLS0tDQoNCiMgRGF0YSBNYW5hZ2VtZW50IGFuZCBTaGFyaW5nDQoNCiMjIDEuIFdoeSBzaG91bGQgd2UgbWFuYWdlIGFuZCBzaGFyZSBkYXRhPw0KDQojIyMgMS4xLiBDb250cmFzdGluZyB3ZWxsIGFuZCBwb29ybHkgbWFuYWdlZCBkYXRhDQoNCmBgYHtyfQ0KZ29vZF9kYXRhID0NCg0KYGBgDQoNCmBgYHtyfQ0KcG9vcl9kYXRhID0gDQpgYGANCg0KIyMgMi4gSWRlbnRpZnlpbmcgYW5kIGFkb3B0aW5nIHN0YW5kYXJkcw0KDQojIyAzLiBEb2N1bWVudGF0aW9uIGFuZCBjb2RlDQoNCiMjIDQuIEVmZmVjdGl2ZWx5IHVzaW5nIG1ldGFkYXRhDQoNCiMjIyBCaW9tb2RlbHMvQ2VsbE1MDQoNCjxmaWxlOi8vL0M6L1VzZXJzL25hdWx0L0Rvd25sb2Fkcy9uYnQxMTU2LnBkZj4gPGh0dHBzOi8vd3d3Lm5hdHVyZS5jb20vYXJ0aWNsZXMvbmJ0MTE1Nj4NCg==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIkRhdGEgTWFuYWdlbWVudCBhbmQgU2hhcmluZyINCm91dHB1dDogaHRtbF9ub3RlYm9vaw0KLS0tDQoNCiMgRGF0YSBNYW5hZ2VtZW50IGFuZCBTaGFyaW5nDQoNCiMjIDEuIFdoeSBzaG91bGQgd2UgbWFuYWdlIGFuZCBzaGFyZSBkYXRhPw0KDQojIyMgMS4xLiBDb250cmFzdGluZyB3ZWxsIGFuZCBwb29ybHkgbWFuYWdlZCBkYXRhDQoNCmBgYHtyfQ0KZ29vZF9kYXRhID0NCg0KYGBgDQoNCmBgYHtyfQ0KcG9vcl9kYXRhID0gDQpgYGANCg0KIyMgMi4gSWRlbnRpZnlpbmcgYW5kIGFkb3B0aW5nIHN0YW5kYXJkcw0KDQojIyAzLiBEb2N1bWVudGF0aW9uIGFuZCBjb2RlDQoNCiMjIDQuIEVmZmVjdGl2ZWx5IHVzaW5nIG1ldGFkYXRhDQoNCiMjIyBCaW9tb2RlbHMvQ2VsbE1MDQoNCjxmaWxlOi8vL0M6L1VzZXJzL25hdWx0L0Rvd25sb2Fkcy9uYnQxMTU2LnBkZj4gPGh0dHBzOi8vd3d3Lm5hdHVyZS5jb20vYXJ0aWNsZXMvbmJ0MTE1Nj4NCg0KYGBge3J9DQojIExvYWQgbmVjZXNzYXJ5IGxpYnJhcmllcw0KbGlicmFyeShTQk1MUikNCmxpYnJhcnkoaWdyYXBoKQ0KDQojIExvYWQgU0JNTCBmaWxlDQpzYm1sX2ZpbGUgPC0gIkM6Ly9Vc2Vycy9uYXVsdC9Eb3dubG9hZHMvUmV2ZXJzaWJsZV9CaW5kaW5nLnNibWwiICAjIFJlcGxhY2Ugd2l0aCB0aGUgcGF0aCB0byB5b3VyIFNCTUwgZmlsZQ0Kc2JtbF9tb2RlbCA8LSByZWFkU0JNTChzYm1sX2ZpbGUpDQpzdW1tYXJ5KHNibWxfbW9kZWwpDQoNCmBgYA0KDQpgYGB7cn0NCg0KYGBgDQo=</div>
 
 
 

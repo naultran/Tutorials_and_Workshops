@@ -196,7 +196,7 @@ cat(lines, sep = "\n")
 As you can see, there is not a zero in sight here. After you read the first 2 summary lines you can see the following structure:
 
 | Feature/Gene                                   | Barcode/Cell                                      | Count/Value                                |
-|------------------------------------------------|---------------------------------------------------|--------------------------------------------|
+|------------------------|--------------------------|----------------------|
 | Refers to the row number in the genes.tsv file | Refers to the row number in the barcodes.tsv file | Include all non-zero values of the dataset |
 
 Let's see what this is here
@@ -409,7 +409,40 @@ seurat_object <- subset(seurat_object, subset = nFeature_RNA > 200 & nFeature_RN
 print(seurat_object)
 ```
 
-## 5. Normalization
+## 5. Metadata!
+
+We’ve invested a lot of effort, time, and money in generating and processing these data. From this we get *tons* of data which can be mined across several projects, labs, and institutions… *or can we?*
+
+It is absolutely critical to not ignore the metadata slot of whatever single-cell object your are working with, both as a data generator and as a user of the data.
+
+```{r}
+print(seurat_object@meta.data)
+```
+
+Can you see anything missing here? Consider this, could you describe the study design, model, and other important experimental details simply by looking at the information in this table?
+
+Let's start addressing some of the missing information
+
+```{r}
+# Add missing species information
+seurat_object$species = "NCBItaxon_9606"
+seurat_object$species__ontology_label = "Homo sapiens"
+
+# Add missing organ ontology
+seurat_object$organ = "CL_2000001"
+seurat_object$organ__ontology_label = "peripheral blood mononuclear cell"
+
+# Add missing sex
+seurat_object$sex = "unknown"
+```
+
+You will note that we use both ontologies and ontology labels. This is a good habit to truly ensure that your data is understood both my machines and humans, and minimized the risk of misunderstanding as each ontology is clearly defined. For more information see [this useful resource about the Alexandria convention for metadata](https://singlecell.zendesk.com/hc/en-us/sections/4402652454043-Metadata-File) or the [Ontology look service (OLS)](https://www.ebi.ac.uk/ols4).
+
+```{r}
+print(seurat_object@meta.data)
+```
+
+## 6. Normalization
 
 Finally we want to address the issue of unequal sequencing depth and other technical noise by performing normalization. Here we normalize the data using a *regularized negative binomial regression* which models adjusts the counts for each gene based on the total number of counts within a cell with adjustments for lowly and highly expressed genes as [described here](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1874-1).
 
@@ -423,6 +456,10 @@ Finally we want to visualize the data. To do this we need to perform dimension r
 seurat_object = RunPCA(seurat_object, verbose = F)
 seurat_object = RunUMAP(seurat_object, dims = 1:30, verbose = F)
 FeaturePlot(seurat_object, features = c('scDblFinder.score', 'percent.mt', 'nFeature_RNA', 'nCount_RNA'))
+```
+
+```{r}
+DimPlot(seurat_object, group.by = c('species__ontology_label'))
 ```
 
 ```         

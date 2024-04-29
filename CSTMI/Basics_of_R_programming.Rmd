@@ -98,7 +98,7 @@ class(y)
 age = 25            # numeric or integer
 population = 1000L  # 'L' suffix indicates an integer
 
-class(integer)
+class(population)
 ```
 
 -   **Character:** textual data contained within single or double quotes.

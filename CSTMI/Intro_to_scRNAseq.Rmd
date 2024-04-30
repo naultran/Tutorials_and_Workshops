@@ -461,7 +461,3 @@ FeaturePlot(seurat_object, features = c('scDblFinder.score', 'percent.mt', 'nFea
 ```{r}
 DimPlot(seurat_object, group.by = c('species__ontology_label'))
 ```
-
-```         
-6. Dimension reduction and clustering; 7. Annotation of cell types; 8. Trajectories and RNA velocity; 9. Inferring cell-cell communication; 10. Spatial transcriptomics
-```

@@ -31,8 +31,10 @@ suppressPackageStartupMessages({
 **Download pre-processed data for liver from mice treated with TCDD**
 
 ```{r}
-options(timeout = max(6000, getOption("timeout")))
-download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE148339&format=file&file=GSE148339%5Fliver%2Eintegrated%2Efinal%2ERData%2Egz', './downloads/GSE148339_liver.integrated.final.RData.gz')
+# Commented to prevent having too many simultaneous downloads
+
+#options(timeout = max(6000, getOption("timeout")))
+#download.file('https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE148339&format=file&file=GSE148339%5Fliver%2Eintegrated%2Efinal%2ERData%2Egz', './downloads/GSE148339_liver.integrated.final.RData.gz')
 system("gunzip ./downloads/GSE148339_liver.integrated.final.RData.gz")
 ```
 
@@ -95,8 +97,8 @@ We can also look at tools such as NicheNet, which include not only cell-cell int
 
 ```{r}
 # Load PK
-ligand_target_matrix <- readRDS(url("https://zenodo.org/record/7074291/files/ligand_target_matrix_nsga2r_final.rds"))
-lr_network <- readRDS(url("https://zenodo.org/record/7074291/files/lr_network_human_21122021.rds"))
+ligand_target_matrix <- readRDS('./downloads/ligand_target_matrix_nsga2r_final.rds')
+lr_network <- readRDS("./downloads/lr_network_human_21122021.rds")
 ```
 
 Next we can examine the database of ligand-receptor interactions. We will filter for TGFB1 as the ligand, just for simplicity.
@@ -330,5 +332,3 @@ cellchat1 <- identifyCommunicationPatterns(cellchat1, pattern = "outgoing", k = 
 
 netAnalysis_river(cellchat1, pattern = "outgoing")
 ```
-
-## 3. Summary

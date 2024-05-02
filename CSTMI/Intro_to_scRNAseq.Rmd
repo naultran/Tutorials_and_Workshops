@@ -207,6 +207,7 @@ readLines('./downloads/genes.tsv', n = 15)[15]
 
 # Read the specific line of the file
 readLines('./downloads/barcodes.tsv', n = 1)[1]
+
 ```
 
 From here we can see that the first row of data in the `mtx` file represent the gene ***Sntg1*** for the cell with barcode ***AAACCCACAACTTCTT_1***.
@@ -331,6 +332,7 @@ seurat_object[["percent.mt"]] <- PercentageFeatureSet(seurat_object, pattern = "
 
 # Plot the values
 VlnPlot(seurat_object, features = 'percent.mt')
+
 ```
 
 We see that the percentage of counts representing mitochondrial genes is mostly below 5% but as high as \~25%. To evaluate these results think back to the three experiments and consider what you would expect to see:
@@ -449,6 +451,7 @@ Finally we want to address the issue of unequal sequencing depth and other techn
 ```{r}
 seurat_object = SCTransform(seurat_object, verbose = F)
 ```
+
 
 Finally we want to visualize the data. To do this we need to perform dimension reduction which will be covered in a later module. We will run it here for visualization purposes.
 

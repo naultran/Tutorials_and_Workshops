@@ -8,9 +8,9 @@ This notebook will walk you through some of the basics of R programming to help 
 
 # Installation of R and R Studio
 
-Before diving into R programming you will want to have both R and RStudio (interactive development environment) installed. You can download them from the official website <https://posit.co/download/rstudio-desktop/>.
+Before diving into R programming you will want to have both R and RStudio (interactive development environment) installed. You can download them from the official website <https://docs.posit.co/previous-versions/rstudio/#2023121>.
 
-> *Note: When installing R, it's wise to verify the version you choose, especially if you intend to utilize community-developed packages. For this introduction we will be using version 4.3.3.*
+> *Note: When installing R, it's wise to verify the version you choose, especially if you intend to utilize community-developed packages. For this introduction we will be using version 4.2.0.*
 
 After opening R Studio you will want to create a new notebook and allow R Studio to install the packages needed. We will review the installation of packages later in this tutorial.
 

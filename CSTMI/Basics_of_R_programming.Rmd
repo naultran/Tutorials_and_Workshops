@@ -238,6 +238,8 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install(c('Seurat', 'pheatmap', 'SingleCellExperiment', 'scDblFinder'))
 ```
 
+*Note, you might run into some installation problems for Seurat/SeuratObjects. As packages get more complex and depend on other packages, there are sometimes conflicts when updates occur. Here Matrix may be posing a problem. To fix this, install Rtools42 and use the following command: `remotes::install_version("Matrix", version = "1.6.5")`*
+
 ```{r}
 suppressPackageStartupMessages({
   library(tidyr)
@@ -315,7 +317,7 @@ As you become more comfortable with coding for your data analysis you will see t
 ```
 
 ::: {style="color: #333; border: 1px solid #190dff; border-radius: 3px;"}
-**Answer:** package.install('readxl')
+**Answer:** install.packages('readxl')
 :::
 
 ```{r}

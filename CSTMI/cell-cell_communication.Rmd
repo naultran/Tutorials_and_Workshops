@@ -157,6 +157,12 @@ cellchat1 <- computeCommunProbPathway(cellChat)
 cellchat1 <- aggregateNet(cellchat1)
 ```
 
+*Note: load previously processed data if this is taking too long*
+
+```{r}
+load('./downloads/cellchat1.rds')
+```
+
 **Simple visualization**
 
 *Note: We will explore visualizations in further depth in a following section*

@@ -271,9 +271,7 @@ In real-world applications, typing in data manually, as we did in our previous e
 **Tip:** Whenever you're unsure how to use a command in R, simply type `?command_name` in the command line (usually at the bottom of the screen). For example, `?read.table` will show you what inputs are needed, as well as some examples. ***Give it a try in the console below!***
 :::
 
-We are probably all familiar with data tables. This is one of the most common formats because it is an effective way to store, view, and work with data. This section will focus on how to we work with tables that were saved and/or created by other programs. However, as you start thinking about your own data and how to organize it, you are strongly encouraged to explore the section of **data formatting** where we discuss the advantages and disadvantages of using *wide* vs *long* tables and other aspects of formatting.
-
-[*Before we start: Download this folder and save it in the same folder that this tutorial is in.*]{.underline}
+We are probably all familiar with data tables. This is one of the most common formats because it is an effective way to store, view, and work with data. This section will focus on how to we work with tables that were saved and/or created by other programs. However, as you start thinking about your own data and how to organize it, you are strongly encouraged to investigate data formatting with R at resources such as [here](https://www.r-bloggers.com/2021/10/how-to-do-data-format-in-r/).
 
 #### 4.1a. Tab-delimited tables
 
@@ -287,7 +285,7 @@ bw_df = read.table(
 )
 ```
 
-***Note:*** we use the `#` symbol to make comments. The text following the character is ignored by the code interpreter allowing someone to add information in plain language to guide other users, or even themselves at a later date.
+***Note:*** we use the `#` symbol to make comments. The text following the character is ignored by the code interpreter allowing someone to add information in plain language to guide other users, or even themselves at a later date. [This is a very good practice, use it!!]{.underline}
 
 Now lets look at the table we just imported.
 
@@ -309,7 +307,7 @@ ggplot(bw_df, aes(x = Group, y = Value, fill = Group)) +
 
 #### 4.1b. Excel tables
 
-As you become more comfortable with coding for your data analysis you will see that it is generally easier to work with *tab-delimited (.txt, .tab) or comma-separated (.csv)* files. However, it is not impossible or that much harder to work with excel tables if it is what you have (though you can always export the table). Excel is a proprietary format and the possibility of having multiple sheets in a file is where some of the challenges arise. To deal with this we need to use a package such as `readxl`. Use the following empty code chunks and lessons from section 3 to install and load this package
+As you become more comfortable with coding for your data analysis you will see that it is generally easier to work with *tab-delimited (.txt, .tab) or comma-separated (.csv)* files. However, it is not impossible or much harder to work with excel tables if it is what you have (though you can always export the table). Excel is a proprietary format and the possibility of having multiple sheets in a file is where some of the challenges arise. To deal with this we need to use a package such as `readxl`. Use the following empty code chunks and lessons from section 3 to install and load this package
 
 ```{r}
 # Write your code to install readxl from CRAN and try it out
@@ -350,9 +348,9 @@ ggplot(df, aes(x = Group, y = Value, fill = Group)) + # We replaced df
 
 ### 4.2. R objects
 
-For more complex objects, such as single-cell and spatial transcriptomic data, researchers will simply save their R object as it is using commands such as `save` or `saveRDS`. We will discuss how to save these objects in a later section. The advantage of doing this is that is maintains all of the information and formatting that the data generator will have added which does not effectively transfer to a table. For example; *Did the analysis use dose as a number or a factor? Was the data stored as a matrix, dataframe, or vector?* Providing the R object can help improve the reproducibility of analyses in certain scenarios.
+For more complex objects, such as single-cell and spatial transcriptomic data, researchers will simply save their R object as it is using commands such as `save` or `saveRDS`. The advantage of doing this is that is maintains all of the information and formatting that the data generator will have added which does not effectively transfer to a table. For example; *Did the analysis use dose as a number or a factor? Was the data stored as a matrix, dataframe, or vector?* Providing the R object can help improve the reproducibility of analyses in certain scenarios.
 
-Here we will focus on R objects which represent single-cell RNA sequencing datasets. These datasets typically are stored using a complex format such as `S4 vector` which, in a very simplified description, allows the use of `slots` to hold metadata, raw counts, normalized counts, gene details, dimensionality reductions, and more...
+Here we will focus on R objects which represent single-cell RNA sequencing datasets. These datasets typically are stored using a complex format which, in a very simplified description, allows the use of `slots` to hold metadata, raw counts, normalized counts, gene details, dimension reductions, and more...
 
 ***Downloading data from public repositories***
 
@@ -395,6 +393,33 @@ Just for fun! Lets look at how having the complete R object can be really helpfu
 
 ```{r}
 DimPlot(seurat_object, label = TRUE, label.size = 5) + NoLegend()
+```
+
+**Saving the R object**
+
+As previously mentioned, objects can be saved using `save` or `saveRDS`. In combination with the load function, this maintains the R object as it was when it was produced.
+
+Using `save`:
+
+```{r}
+# Save seurat_object to outputs
+save(seurat_object, file = './outputs/exported_using_save.rds')
+
+# Import the file into your environment using original variable name
+load('./outputs/exported_using_save.rds') 
+```
+
+Using `saveRDS`:
+
+```{r}
+# Save seurat_object to outputs
+saveRDS(seurat_object, file = './outputs/exported_using_save.rds')
+
+# Import the file into your environment using a new variable name
+saved_seurat_object = readRDS('./outputs/exported_using_save.rds')
+
+# Show that the figure is exactly the same
+DimPlot(saved_seurat_object, label = TRUE, label.size = 5) + NoLegend()
 ```
 
 ------------------------------------------------------------------------

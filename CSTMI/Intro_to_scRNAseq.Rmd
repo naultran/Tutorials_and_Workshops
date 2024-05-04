@@ -48,6 +48,7 @@ In preparation for the following hands-on experiences we will set up an R enviro
 ### **2.1. Load libraries**
 
 ```{r}
+# Load the package dependencies for this workbook
 suppressPackageStartupMessages({
   library(Seurat)
   library(ggplot2)
@@ -62,9 +63,12 @@ suppressPackageStartupMessages({
 For this tutorial we will use raw unprocessed data from human peripheral blood mononuclear cells (PBMCs) generated using the 10X Genomics platform which can be download from the [Seurat page](https://satijalab.org/seurat/articles/pbmc3k_tutorial). These data should be downloaded, extracted, and placed in the downloads folder for this workshop.
 
 ```{r}
-# Load the PBMC dataset
+# Load the PBMC dataset which was previously downloaded
+# We use the filtered_gene_bc_matrices which has removed empty droplets
 pbmc.data <- Read10X(data.dir = "./downloads/filtered_gene_bc_matrices/hg19/")
-# Initialize the Seurat object with the raw (non-normalized data).
+
+# Initialize the Seurat object with the raw (non-normalized data)
+# When setting up the object we remove items which are clearly not cells (min.features) or expressed genes (min.cells)
 seurat_object <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", 
                                     min.cells = 3, min.features = 200)
 ```
@@ -74,6 +78,7 @@ seurat_object <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k",
 ### **2.3. Check that everything was loaded correctly**
 
 ```{r}
+# Let's look at what is in the object
 print(seurat_object)
 ```
 
@@ -88,7 +93,11 @@ To better understand how to work with single-cell/nuclei RNA sequencing data we 
 ```{r}
 # Raw counts in a seurat object is saved in the assays-RNA-counts slot 
 raw_counts = as.matrix(seurat_object@assays$RNA@layers$counts)
+
+# We make sure to preserve the gene names
 rownames(raw_counts) = rownames(seurat_object)
+
+# We also make sure to preserve the cell barcodes
 colnames(raw_counts) = colnames(seurat_object)
 
 # Lets look at the first 4 columns and rows
@@ -108,6 +117,7 @@ print(raw_counts[1:4,1:4])
 Single-cell transcriptomic analysis tools (*e.g.*, Seurat) does a lot of the heavy lifting for us when it comes to counts and other summary data information. For example, the following code will tell you the number of genes and cells, as well store raw, normalized, and scaled data, dimension reductions, and other analyses which may have been performed.
 
 ```{r}
+# Examine the seurat object again
 print(seurat_object)
 ```
 
@@ -116,7 +126,10 @@ This indicates that we have 13,714 genes (features) across 2,700 samples.
 However, we can also extract that information from the count table:
 
 ```{r}
+# Count the number of columns and print them
 print(paste0('Cells: ', ncol(raw_counts)))
+
+# Count the number of rows and print them
 print(paste0('Features:', nrow(raw_counts)))
 ```
 
@@ -207,7 +220,6 @@ readLines('./downloads/genes.tsv', n = 15)[15]
 
 # Read the specific line of the file
 readLines('./downloads/barcodes.tsv', n = 1)[1]
-
 ```
 
 From here we can see that the first row of data in the `mtx` file represent the gene ***Sntg1*** for the cell with barcode ***AAACCCACAACTTCTT_1***.
@@ -451,7 +463,6 @@ Finally we want to address the issue of unequal sequencing depth and other techn
 ```{r}
 seurat_object = SCTransform(seurat_object, verbose = F)
 ```
-
 
 Finally we want to visualize the data. To do this we need to perform dimension reduction which will be covered in a later module. We will run it here for visualization purposes.
 

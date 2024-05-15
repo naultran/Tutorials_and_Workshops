@@ -9,7 +9,7 @@ Analysis of single-cell data requires a number of software installations and fil
 A link to a shared Google Drive was provided to you via email. These files will be used for the tutorial and may take 1-2 hours to copy due to their size. Ensure you have these files **copied to your own Google Drive**. 
 
 #### Download the folder
-#![DownloadDrive](images/DownloadGDrive.png)
+
 <img src="images/DownloadGDrive.png" alt="Download Instructions" style="width:500px; border:2px solid black;"/>
 
 #### Extract the zip folder.

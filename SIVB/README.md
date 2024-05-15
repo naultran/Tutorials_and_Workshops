@@ -22,12 +22,13 @@ A link to a shared Google Drive was provided to you via email. These files will 
 #### D. Click "My Drive", "New", "Upload Folder".
 <kbd>
 <img src="images/GDriveUpload.png" alt="Download Instructions" style="width:300px; border:2px solid black;"/>
-</kbd>
+</kbd><br>
+
 <b> Be sure to choose the folder called "SIVBWorkshop_Files"</b> inside of the extracted folder.
 
 After doing this, you should have a folder called **SIVBWorkshop_Files**, which should **NOT** be nested within another folder. **The SIVBWorkshop_Files folder should be visible when you click _My Drive_**.
 
-**Note:** You will need at least NN GB of available space.
+**Note:** You will need at least <u>12 GB</u> of available space.
 
 ### 1.b. Download the **Google Colab Workbook**
 From this GitHub repository, download the file called **SIVBWorkshop2024.ipynb** as shown below.

@@ -8,24 +8,27 @@ Analysis of single-cell data requires a number of software installations and fil
 ### 1.a. Copy the Contents of the SIVB Shared Google Drive
 A link to a shared Google Drive was provided to you via email. These files will be used for the tutorial and may take 1-2 hours to copy due to their size. Ensure you have these files **copied to your own Google Drive**. 
 
-#### Download the folder
-
+#### A. Download the folder
 <kbd>
-<img src="images/DownloadGDrive.png" alt="Download Instructions" style="width:500px; border:2px solid black;"/>
+<img src="images/DownloadGDrive.png" alt="Download Instructions" style="width:600px; border:2px solid black;"/>
 </kbd>
 
-#### Extract the zip folder.
+#### B. Extract the zip folder.
 
 
-#### Log into your Google Drive.
+#### C. Log into your Google Drive.
 
 
-#### Click "My Drive", "New", "Upload Folder".
+#### D. Click "My Drive", "New", "Upload Folder".
 <b> Be sure to choose the folder called "SIVBWorkshop_Files"</b> inside of the extracted folder.
-#![DownloadDrive](images/GDriveUpload.png)
-<img src="images/download_instructions.png" alt="Download Instructions" style="width:500px; border:2px solid black;"/>
+<kbd>
+<img src="images/images/GDriveUpload.png" alt="Download Instructions" style="width:600px; border:2px solid black;"/>
+</kbd>
 
 Upload this file to **your Google Colab account**. This file is the workshop tutorial.
+<kbd>
+<img src="images/DownloadGDrive.png" alt="Download Instructions" style="width:600px; border:2px solid black;"/>
+</kbd>
 
 After doing this, you should have a folder called **SIVBWorkshop_Files**, which should **NOT** be nested within another folder. **The SIVBWorkshop_Files folder should be visible when you click _My Drive_**.
 

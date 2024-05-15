@@ -19,7 +19,10 @@ A link to a shared Google Drive was provided to you via email. These files will 
 
 #### Click "My Drive", "New", "Upload Folder".
 <b> Be sure to choose the folder called "SIVBWorkshop_Files"</b> inside of the extracted folder.
-![DownloadDrive](images/GDriveUpload.png)
+#![DownloadDrive](images/GDriveUpload.png)
+<img src="images/download_instructions.png" alt="Download Instructions" style="width:500px; border:2px solid black;"/>
+
+Upload this file to **your Google Colab account**. This file is the workshop tutorial.
 
 After doing this, you should have a folder called **SIVBWorkshop_Files**, which should **NOT** be nested within another folder. **The SIVBWorkshop_Files folder should be visible when you click _My Drive_**.
 

@@ -10,7 +10,9 @@ A link to a shared Google Drive was provided to you via email. These files will 
 
 #### Download the folder
 
+<kbd>
 <img src="images/DownloadGDrive.png" alt="Download Instructions" style="width:500px; border:2px solid black;"/>
+</kbd>
 
 #### Extract the zip folder.
 

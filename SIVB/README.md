@@ -41,7 +41,7 @@ From this GitHub repository, click on and download the file called **SIVBWorksho
 #### 2.B. Upload the notebook
 Upload this file to **your Google Colab account**. This file is the workshop tutorial.
 <kbd>
-<img src="images/Colab_upload.png" alt="Download Instructions" style="width:600px; border:2px solid black;"/>
+<img src="images/Colab_upload.png" alt="Download Instructions" style="width:300px; border:2px solid black;"/>
 </kbd>
 
 ### 3. Test the Google Drive Connection

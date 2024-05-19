@@ -47,6 +47,7 @@ Upload this file to **your Google Colab account**. This file is the workshop tut
 
 ### 3. Test the Google Drive Connection
 Open the SIVBWorkshop2024.ipynb file in Google Colab and move to the following <i>code chunk</i>. A gray box will have a `play` button that appears when your mouse is over it.
+
 <kbd>
 <img src="images/Colab_firstchunk.png" alt="Download Instructions" style="width:600px; border:2px solid black;"/>
 </kbd>

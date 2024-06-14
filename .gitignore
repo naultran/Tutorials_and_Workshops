@@ -54,6 +54,9 @@ rsconnect/
 .RData
 
 *-checkpoint.ipynb
+*.gz
+*.fa
+*.gtf
 /scRNAseq-miniWS/logs/*
 /scRNAseq-miniWS/Data/*
 /scRNAseq-miniWS/output/*

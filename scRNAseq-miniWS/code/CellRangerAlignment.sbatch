@@ -29,9 +29,9 @@ echo $PATH
 echo ${RUN_ID}
 echo ${FASTQ_PATH}
 echo ${SAMPLE}
-echo ${TRANSCRIPTOME}
+echc ${TRANSCRIPTOME}
 
-/mnt/home/naultran/cellranger-8.0.0/cellranger count --id=${RUN_ID} --fastqs=${FASTQ_PATH} --sample=${SAMPLE} --transcriptome=${TRANSCRIPTOME} --create-bam=false --localmem=8 --localcores=24
+/mnt/home/naultran/cellranger-8.0.0/cellranger count --id=${RUN_ID} --fastqs=${FASTQ_PATH} --sample=${SAMPLE} --transcriptome=${TRANSCRIPTOME} --create-bam=false --force-cells=3200 --localmem=8 --localcores=24
 
 echo Finished aligning
 

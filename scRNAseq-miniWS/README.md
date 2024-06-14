@@ -17,6 +17,13 @@ pip install ipykernel jupyter
 After we've done this we will set up our virtual environment. Before doing this, <b>be sure to have this Git repository cloned on your HPCC and go to the folder where this README.md file is</b>.
 
 Run the following:
+<i>clone this repository</i>
+```{bash}
+git clone https://github.com/naultran/Tutorials_and_Workshops.git
+cd Tutorials_and_Workshops/scRNAseq-miniWS
+```
+
+<i>create your virtual environment</i>
 ```{bash}
 conda create -n py_39 python=3.9
 conda activate myenv

@@ -17,6 +17,7 @@ pip install ipykernel jupyter
 After we've done this we will set up our virtual environment. Before doing this, <b>be sure to have this Git repository cloned on your HPCC and go to the folder where this README.md file is</b>.
 
 Run the following:
+
 <i>clone this repository</i>
 ```{bash}
 git clone https://github.com/naultran/Tutorials_and_Workshops.git
@@ -33,4 +34,14 @@ pip install ipykernel jupyter
 pip install -r requirements.txt
 ./install.sh
 ```
+<b>Preparing data</b>
+This workshop assumes the sequencing data has already been downloaded from the sequencing service provider (e.g. Novogene). You should have for each sample a seperate folder which contains <b>4 files</b>. The files will typically end (or near the end) with <b>_R1, R2, I1, I2</b>. Each of these folders should be in a folder called `Data`. Below is some sample code for doing this.
+
+```{bash}
+mkdir Data
+cp -r <path/to/sequencing/files/> ./Data/
+```
+
+
+
 

@@ -43,7 +43,7 @@ pip install scanpy scvi-tools matplotlib seaborn pandas numpy anndata scanpro
 
 <b>Preparing data</b>
 
-This workshop assumes the sequencing data has already been downloaded from the sequencing service provider (e.g. Novogene). You should have for each sample a seperate folder which contains <b>4 files</b>. The files will typically end (or near the end) with <b>_R1, R2, I1, I2</b>. Each of these folders should be in a folder called `Data`. Below is some sample code for doing this.
+This workshop assumes the sequencing data has already been downloaded from the sequencing service provider (e.g. Novogene). You should have for each sample a seperate folder which contains <b>4 files</b>. The files will typically end (or near the end) with <b>_R1, _R2, _I1, _I2</b>. Each of these folders should be in a folder called `Data`. Below is some sample code for doing this.
 
 ```{bash}
 mkdir Data

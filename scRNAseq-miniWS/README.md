@@ -50,6 +50,6 @@ mkdir Data
 cp -r <path/to/sequencing/files/> ./Data/
 ```
 
-
+<i>TODO: Add ondemand instructions</i>
 
 

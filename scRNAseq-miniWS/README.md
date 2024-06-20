@@ -58,10 +58,15 @@ module load GCC/9.3.0 OpenMPI/4.0.3 R/4.0.3
 R
 ```
 
+```{bash}
+Rscript install_R_packages.R
+
+R --no-vanilla -f install_R_packages.R
+```
 
 
 
-## <b>3. Preparing data</b>
+## <b>4. Preparing data</b>
 
 This workshop assumes the sequencing data has already been downloaded from the sequencing service provider (e.g. Novogene). You should have for each sample a seperate folder which contains <b>4 files</b>. The files will typically end (or near the end) with <b>_R1, _R2, _I1, _I2</b>. Each of these folders should be in a folder called `Data`. Below is some sample code for doing this.
 
@@ -71,7 +76,7 @@ cp -r <path/to/sequencing/files/> ./Data/
 ```
 
 
-## <b>4. After you've set up your environment</b>
+## <b>5. After you've set up your environment</b>
 
 Once you've installed Anaconda, set up your environment, and installed all the packages you will not need to repeat steps 1 - 3 each time you start a new session. Simply start up a new <b>OnDemand session</b> and open a <b>terminal</b>. Run the following:
 

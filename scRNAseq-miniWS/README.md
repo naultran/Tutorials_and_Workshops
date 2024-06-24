@@ -36,7 +36,9 @@ cd Tutorials_and_Workshops/scRNAseq-miniWS
 ```{bash}
 conda create -n py_39 python=3.9
 conda activate py_39
+```
 
+```{bash}
 pip install ipykernel jupyter
 
 #These currently do not work. Use the next section.
@@ -58,13 +60,12 @@ module load GCC/9.3.0 OpenMPI/4.0.3 R/4.0.3
 R
 ```
 
+<i> The following code does not work right now. Copy the contents of install_R_packages.R and paste it into the R terminal.
 ```{bash}
-Rscript install_R_packages.R
-
+#Rscript install_R_packages.R
+#
 R --no-vanilla -f install_R_packages.R
 ```
-
-
 
 ## <b>4. Preparing data</b>
 
@@ -74,7 +75,6 @@ This workshop assumes the sequencing data has already been downloaded from the s
 mkdir Data
 cp -r <path/to/sequencing/files/> ./Data/
 ```
-
 
 ## <b>5. After you've set up your environment</b>
 

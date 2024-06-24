@@ -44,7 +44,7 @@ install_packages <- function(packages) {
 }
 
 # Read the tab-delimited file
-packages_df <- fread("packages.txt")
+packages_df <- fread("R_packages.txt")
 
 # Convert data.table to list of lists
 packages <- split(packages_df, 1:nrow(packages_df))

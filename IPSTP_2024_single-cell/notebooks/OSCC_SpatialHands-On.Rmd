@@ -1,0 +1,387 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Introduction
+
+This hands-on tutorial will explore spatial transcriptomics data which examines the spatial characteristics of [oral squamous cell carcinoma (OSCC) from this manuscript](https://doi.org/10.1038/s41467-023-40271-4). We will use this dataset to examine what can be done with these types of published datasets.
+
+**Learning objectives:**
+
+-   Be able to load published spatial transcriptomic data to ask your own research questions.
+
+-   Do some preliminary QC, evaluation of published data.
+
+-   Explore spatial transcriptomic metadata.
+
+-   Apply various visualization approaches to explore spatially resolved gene expression.
+
+## 1. Set-up analysis R environment
+
+::: {style="border: 8px solid orange"}
+**Before you start:**
+
+We need to tell R Studio where to find the files that we will be using as part of this notebook. Instructions on where to download these are in the notebook, but because of their sizes we have pre-downloaded them onto a shared space on the HPC.
+
+**Be sure to do the following before running this code:**
+
+1.  Clear objects from the workspace (broom in upper right)
+2.  Restart R session (Session menu)
+3.  Paste the following into the **Console**:
+
+.libPaths( c("/mnt/research/IPSTP_2024/IPSTP_Nault/R_IPSTP_custom_libs", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/arrow-R/14.0.0.2-foss-2023a-R-4.3.2" ) )
+:::
+
+### 1.A. Load your R libraries
+
+As part of this workshop we have set up pre-developed R environments so that all packages have been installed correctly. If you need to set up your own R environment you can install the packages using the following examples (*change \<package-name\> portion*).
+
+<div>
+
+Use this for CRAN packages:
+
+*install.packages("**\<package-name\>**")*
+
+or this for BioConductor packages:
+
+\*if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+BiocManager::install("\<**package-name\>**")\*
+
+</div>
+
+```{r}
+suppressPackageStartupMessages({
+  library(patchwork, lib.loc = '/mnt/scratch/naultran/R_IPSTP_custom_libs/')
+  #library(ggplot2, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a")   #CRAN
+  #library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library")
+  library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2")
+  #library(Seurat, lib.loc = "/mnt/scratch/naultran/R_IPSTP_custom_libs/")     # CRAN
+  library(SeuratData) # CRAN
+  library(dplyr)      # CRAN
+})
+```
+
+### 1.B. Download data
+
+The spatial datasets can be downloaded from [Figshare](https://figshare.com/articles/dataset/Spatial_transcriptomics_reveals_distinct_and_conserved_tumor_core_and_edge_architectures_that_predict_survival_and_targeted_therapy_response_/20304456/1). Here the datasets *do not* represent raw sequencing data but rather datasets which have *previously been processed and annotated*. Authors have made the raw data available but these would require extensive processing to replicate the publication results. Each sample is saved as an individual R object file (e.g., sample_1.Robj)
+
+For the purposes of this workshop we have already downloaded all the datasets. This code chunk will show what treatment groups were downloaded and can be examined further.
+
+```{r}
+# List all files that start with 'sample' and end with '.Robj'
+files <- list.files(path = '/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/OSCC', pattern = "^sample.*\\.Robj$", full.names = TRUE)
+print(files)
+```
+
+# 2. Examining a single sample
+
+We will start by loading only one sample to examine how these data are structured. Let's begin with *sample_1*. As you will see, these are stored as a *Seurat object* similar to single-cell datasets, as they have a very similar structure and information. The major difference is the presence of an *image* layer that stores the actual tissue image for overlaying visualizations.
+
+```{r}
+# Load the sample_1 Seurat object
+load('/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/OSCC/sample_1.Robj')
+
+# Print the loaded Seurat object to examine its structure
+print(sample_1)
+```
+
+## 2.A. Examine the metadata
+
+We will explore the metadata to see how the authors annotated their cells/spots.
+
+```{r}
+# Print the metadata of the sample_1 Seurat object
+print(sample_1@meta.data)
+```
+
+## 2.B. Visualize spatial annotations
+
+Finally, we will visualize the data using the `SpatialDimPlot` function, which shows the metadata values on their x and y coordinates overlaid on top of the image.
+
+```{r fig.height = 8}
+# Visualize the spatial annotations with SpatialDimPlot
+Seurat::SpatialDimPlot(sample_1, 
+               group.by = c('pathologist_anno.x', 'cluster_annotations'), 
+               #pt.size.factor = 5E3,
+               #image.scale='lowres',
+               image.alpha = 0.15)
+```
+
+# 3. Exploring all samples
+
+In this section, we will load all the samples downloaded from FigShare and store them in a temporary list for later access. Each sample will be loaded as previously described using the `load` function.
+
+```{r}
+# Initialize an empty list to store the loaded Seurat objects
+loaded_objects <- list()
+
+# Load each file and store the contents in the list
+for (file in files) {
+  # Create an environment to load the data into
+  env <- new.env()
+  
+  # Load the file into the environment
+  load(file, envir = env)
+  
+  # Extract the contents of the environment and store the first element in the list
+  # We assume that each file contains a single Seurat object
+  loaded_objects[[basename(file)]] <- as.list(env)[[1]]
+}
+```
+
+Next, we will calculate some of the same QC metrics as we did for single-cell data, including *percent mitochondrial genes*, *number of genes*, and *number of UMIs*. We will also plot each of the spatial datasets with their annotations to compare each sample.
+
+```{r}
+# Loop through each item in the list and create SpatialDimPlot
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+  
+  # Add some QC metrics
+  # Identify mitochondrial genes (modify the pattern to match your data)
+  mito_genes <- grep("^MT-", rownames(sample@assays$SCT@counts), value = TRUE)
+
+  # Calculate the total number of reads (UMIs) per cell
+  total_counts <- Matrix::colSums(sample@assays$SCT@counts)
+
+  # Calculate the total number of mitochondrial reads per cell
+  mito_counts <- Matrix::colSums(sample@assays$SCT@counts[mito_genes, ])
+
+  # Calculate the percentage of mitochondrial reads per cell
+  percent_mito <- (mito_counts / total_counts) * 100
+
+  # Add the QC metrics to the Seurat object
+  sample[["percent.mt"]] <- percent_mito
+  sample[['nFeature_RNA']] <- Matrix::colSums(sample@assays$SCT@counts > 0)
+  sample[['nCount_RNA']] <- Matrix::colSums(sample@assays$SCT@counts)
+  
+  # Set the variable features
+  VariableFeatures(sample) <- sample@assays$SCT@var.features
+  
+  # Generate the SpatialDimPlot for the sample
+  p <- SpatialDimPlot(sample, 
+                      group.by = c('cluster_annotations'), 
+                      #pt.size.factor = 5E3, 
+                      image.alpha = 0.15)
+  
+  # Print the plot
+  print(p)
+  
+  # Update the list with the processed sample
+  loaded_objects[[name]] <- sample
+}
+```
+
+```{r}
+  # Generate the SpatialDimPlot for the sample
+  p <- SpatialDimPlot(sample, 
+                      group.by = c('cluster_annotations'), 
+                      #pt.size.factor = 1E3, 
+                      image.alpha = 0.15)
+  print(p)
+```
+
+To contrast with the published findings we will also overlay the expression of *SPRR2E*, the top marker of the core tumor regions. These should overlap well with the previous plots.
+
+```{r}
+# Loop through each item in the list and create SpatialFeaturePlot for SPRR2E
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+
+  # Generate the SpatialFeaturePlot for SPRR2E expression
+  p <- SpatialFeaturePlot(sample, 
+                          features = c('SPRR2E'), 
+                          #pt.size.factor = 5E3, 
+                          image.alpha = 0.15)
+  
+  # Print the plot
+  print(p)
+}
+```
+
+While we are generally good at seeing patterns, it can be difficult to discern whether the expression of *SPRR2E* is truly associated with the core tumor regions. We can also examine this using more traditional single-cell types of visualization such as *Violion plots*.
+
+```{r}
+# Loop through each item in the list and create SpatialDimPlot
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+
+  # Generate the SpatialDimPlot for the sample
+  p <- VlnPlot(sample, group.by='cluster_annotations',
+               features = c('SPRR2E'))
+  
+  # Print the plot
+  print(p)
+}
+```
+
+Conversely, *COL1A1* was found to be a marker of the leading edge.
+
+```{r}
+# Loop through each item in the list and create Violin plot for COL1A1
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+
+  # Generate the Violin plot for COL1A1 expression
+  p <- VlnPlot(sample, 
+               group.by = 'cluster_annotations',
+               features = c('COL1A1'))
+  
+  # Print the plot
+  print(p)
+}
+```
+
+# 4. Clustering and differential expression analysis
+
+Spatial data shares many characteristics of single-cell data. It is therefore possible to process the data similarly to previous examples. Here we will integrate the different tissue sections so that we can analyze them as a group. First we will convert the spatial Seurat object to a single-cell object.
+
+```{r}
+new_seu_list <- list()  # Initialize an empty list to store the new Seurat objects
+
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+  
+  # Get the count matrix and rename columns to include the sample name
+  count_matrix <- sample@assays$SCT@counts
+  colnames(count_matrix) <- paste0(colnames(count_matrix), "_", name)
+  
+  # Get the metadata and rename rows to include the sample name
+  metadata <- sample@meta.data
+  rownames(metadata) <- paste0(rownames(metadata), "_", name)
+  
+  # Create a new Seurat object with the updated count matrix and metadata
+  new_seu <- CreateSeuratObject(counts = count_matrix, project = name)
+  new_seu@meta.data <- metadata
+  
+  # Add the new Seurat object to the list
+  new_seu_list[[name]] <- new_seu
+}
+
+# Merge all the Seurat objects in the list into one
+merged_seurat_object <- Reduce(merge, new_seu_list)
+
+# Rejoin the RNA layers after merging
+merged_seurat_object[["RNA"]] <- JoinLayers(merged_seurat_object[["RNA"]])
+merged_seurat_object[["RNA"]] <- split(merged_seurat_object[["RNA"]], f = merged_seurat_object$sample_id.x)
+```
+
+We will now apply a standard workflow to process and cluster the data for visualization.
+
+```{r}
+merged_seurat_object <- NormalizeData(merged_seurat_object)  # Normalize the data
+merged_seurat_object <- FindVariableFeatures(merged_seurat_object)  # Identify variable features
+merged_seurat_object <- ScaleData(merged_seurat_object)  # Scale the data
+merged_seurat_object <- RunPCA(merged_seurat_object)  # Perform Principal Component Analysis (PCA)
+merged_seurat_object <- FindNeighbors(merged_seurat_object)  # Find the nearest neighbors
+merged_seurat_object <- FindClusters(merged_seurat_object, resolution = 0.5)  # Find clusters
+merged_seurat_object <- RunUMAP(merged_seurat_object, dims = 1:10)  # Run UMAP for dimensionality reduction
+print(merged_seurat_object)  # Print the Seurat object
+```
+
+Let's look at the results using the newly identified clusters as well as the original sample identifiers.
+
+```{r}
+DimPlot(merged_seurat_object)  # Plot the clusters
+DimPlot(merged_seurat_object, group.by = 'sample_id.x')  # Plot the clusters grouped by sample ID
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+What can you tell about these samples after they've been processed together?
+:::
+
+Given the clear evidence of a batch effect we need to apply some sort of batch correction. Here we will use the built-in Seurat Canonical Correlation Analysis (CCA) method.
+
+```{r}
+merged_seurat_object <- IntegrateLayers(object = merged_seurat_object, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+
+# Rejoin the RNA layers after integration
+merged_seurat_object[["RNA"]] <- JoinLayers(merged_seurat_object[["RNA"]])
+```
+
+Once more we perform clustering for visualization.
+
+```{r}
+merged_seurat_object <- FindNeighbors(merged_seurat_object, reduction = "integrated.cca", dims = 1:30)  # Find the nearest neighbors using integrated CCA
+merged_seurat_object <- FindClusters(merged_seurat_object, resolution = 0.11)  # Find clusters with a new resolution
+merged_seurat_object <- RunUMAP(merged_seurat_object, dims = 1:30, reduction = "integrated.cca")  # Run UMAP with integrated CCA
+```
+
+Now let's look at the output.
+
+```{r}
+DimPlot(merged_seurat_object, reduction = "umap")  # Plot UMAP clusters
+DimPlot(merged_seurat_object, group.by = 'cluster_annotations', reduction = "umap")  # Plot UMAP clusters grouped by annotations
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+Did batch correction make a difference? If so, how did it help us for our subsequent analyses?
+:::
+
+Finally we will perform differential expression analysis to see if we can some of the same markers as the original publication. Here we will examine the top 3 markers for each of the annotated sections.
+
+```{r}
+Idents(merged_seurat_object) <- 'cluster_annotations'  # Set the identities of the clusters
+merged_seurat_object.markers <- FindAllMarkers(merged_seurat_object, min.pct = 0.4, only.pos = TRUE)  # Find all markers
+
+# Extract the top 3 markers for each cluster
+top_markers <- merged_seurat_object.markers %>%
+  group_by(cluster) %>%
+  filter(avg_log2FC > 0.5) %>%
+  top_n(3, avg_log2FC) %>%
+  arrange(cluster, desc(avg_log2FC))
+
+# Display the top markers
+top_markers
+
+```
+
+Let's look at how the expression of these genes map to the individual spots.
+
+```{r fig.height = 10}
+FeaturePlot(merged_seurat_object, features = top_markers$gene, ncol = 3)  # Plot the feature expression
+```
+
+We saw that *SNRPD1* was one of the top markers for the edge. Interestingly, this was not one of the top ones in the original publication, so let's see how well it maps to the spatial information. We will plot side by side for each sample the annotations and expression.
+
+```{r}
+# Loop through each item in the list and create SpatialDimPlot for SNRPD1
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+
+  # Generate the SpatialFeaturePlot for SNRPD1 expression
+  p <- SpatialFeaturePlot(sample, features = c('SNRPD1'), image.alpha = 0.15)
+  
+  # Generate the SpatialDimPlot for the sample annotations
+  p2 <- SpatialDimPlot(sample, group.by = c('cluster_annotations'), image.alpha = 0.15)
+  
+  # Print the plots side by side
+  print(p2 + p)
+}
+```
+
+Let's do the same for *DEFB4A* which was a tumor core marker.
+
+```{r}
+# Loop through each item in the list and create SpatialDimPlot for DEFB4A
+for (name in names(loaded_objects)) {
+  # Extract the sample
+  sample <- loaded_objects[[name]]
+
+  # Generate the SpatialFeaturePlot for DEFB4A expression
+  p <- SpatialFeaturePlot(sample, features = c('DEFB4A'), image.alpha = 0.15)
+  
+  # Generate the SpatialDimPlot for the sample annotations
+  p2 <- SpatialDimPlot(sample, group.by = c('cluster_annotations'), image.alpha = 0.15)
+  
+  # Print the plots side by side
+  print(p2 + p)
+}
+```

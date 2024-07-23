@@ -1,0 +1,81 @@
+---
+title: "Importing and visualizing CellXGene data"
+output: html_notebook
+---
+
+# Importing and visualizing CellXGene data
+
+In this notebook we will use data from the [Chan Zuckerberg Initiative (CZI) cellXgene platform](https://cellxgene.cziscience.com/datasets) to explore how to visualize and plot single-cell sequencing data using one of the most popular single-cell analysis tools [Seurat](https://satijalab.org/seurat/).
+
+We previously went over navigating the Cell x Gene portal and identified the dataset called "An alternative cell cycle coordinates multiciliated cell differentiation" as one that we want to explore further. A description of the dataset can be [found here](https://cellxgene.cziscience.com/collections/c26ca66a-63ea-4059-a24e-0e0be0a2a173). We downloaded the dataset by clicking on the download button and downloading the ".rds (Seurat v5)" format. For the purposes of this boot camp, the data has been pre-donwloaded and placed on the MSU HPC for accessing using this notebook.
+
+We use this dataset to demonstrate the more fine-grained control over our visualizations, enabling us to tailor plots to highlight specific cell populations, gene expression patterns, and other important biological insights. Through this hands-on exercise you will gain practical experience in manipulating and customizing single-cell data visualizations to suit various research questions and presentation needs.
+
+------------------------------------------------------------------------
+
+## 1. Set up your R environment
+
+Here we will load the required packages. This notebook only requires `Seurat`. If this package has not already been installed you can type the following in the console below: `install.packages('Seurat')`
+
+```{r}
+library(Seurat)
+```
+
+We will now import the dataset. Resources such as Cell x Gene allows us to download data already formatted for Seurat. Other resources such as the Broad Single-Cell Portal allows us to download the data in a more <i>raw</i> format. We will demonstrate using those types of data in a seperate notebook.
+
+```{r}
+# Import the downloaded dataset and place it into an object called "seu"
+seu = readRDS('/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/CellxGene/CZI_sample_data.rds')
+```
+
+------------------------------------------------------------------------
+
+## 2. Examine the metadata
+
+In this step, we will examine the metadata associated with our dataset. Metadata provides additional information about each cell and sample, such as the treatment condition, cell type annotations, sex, and more. Knowing which metadata is provided is essential for downstream analyses and visualizations.
+
+```{r}
+seu@meta.data
+```
+
+We will first create a `DimPlot` (UMAP) to visualize the distribution of cells based on their treatment conditions and cluster identities, our two main factors of interest.
+
+```{r}
+Seurat::DimPlot(seu, split.by = 'treatment', group.by='cluster_names')
+```
+
+------------------------------------------------------------------------
+
+## 3. Visualizations
+
+In this section, we will create various visualizations to explore and understand the dataset better. We will use different types of plots to examine gene expression patterns across different cell populations and conditions.
+
+### 3.a. Using the UMAP coordinates to examine gene expression
+
+We will start by creating a `FeaturePlot` to visualize the expression of a specific gene, ENSMUSG00000028124 (*Gclm*), across the cells. The FeaturePlot shows the spatial distribution of gene expression on the UMAP plot, allowing us to see which cells express the gene of interest.
+
+```{r}
+Seurat::FeaturePlot(seu, features = 'ENSMUSG00000028124', split.by='treatment')
+```
+
+### 3.b. Comparing groups using a violin plot
+
+Next, we will use a violin plot to compare the expression levels of the gene *Gclm* across different treatment groups and clusters. Violin plots provide a clear view of the distribution of gene expression values within each group, highlighting differences between conditions.
+
+```{r}
+Seurat::VlnPlot(seu, features = 'ENSMUSG00000028124', split.by='treatment', group.by='cluster_names')
+```
+
+### 3.c. Comparing groups using a dot plot
+
+Finally, we will use a dot plot to compare the expression of the gene *Gclm* across different treatment groups and clusters. Dot plots represent both the expression level and the percentage of cells expressing the gene, providing a comprehensive view of gene expression patterns.
+
+```{r}
+Seurat::DotPlot(seu, features = 'ENSMUSG00000028124', split.by='treatment', group.by='cluster_names')
+```
+
+------------------------------------------------------------------------
+
+# Summary
+
+In this tutorial we show how to import and visualize single-cell RNA sequencing data from the Cell x Gene platform using Seurat. By exploring different types of plots, we have gained insights into the expression patterns of a specific gene across various cell populations and treatment conditions. These visualizations are essential for understanding the underlying biology and identifying key differences between groups, ultimately aiding in the interpretation and presentation of single-cell data.

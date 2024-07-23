@@ -7,10 +7,10 @@ Welcome to the hands-on portion for single-cell and spatial analyses for the 202
 
 ### 1. Start RStudio Server
 In the OnDemand website, click on RStudio Server and choose the following resources:
-_R version:_ 4.3.2 (with Bioconductor packages)
-_Number of hours:_ 4
-_Number of cores per task:_ 4
-_Amount of memory:_ 64GB
+_R version:_ 4.3.2 (with Bioconductor packages)<br>
+_Number of hours:_ 4<br>
+_Number of cores per task:_ 4<br>
+_Amount of memory:_ 64GB<br>
 
 Leave the remaining options as default and click __Launch__
 
@@ -25,9 +25,11 @@ Leave the remaining options as default and click __Launch__
 ### 3. Open notebook file
 Using the file menu, open the appropriate notebook (.Rmd) file for the session. Follow the instructions in this file.
 
+For a more friendly look at the material, be sure to click on __Visual__ in the top left corner just above the code.
+
 -----------------------------
-Author: Rance Nault, PhD, Michigan State University
-Reviewed by: 
-Date: July 23, 2024
+Author: Rance Nault, PhD, Michigan State University <br>
+Reviewed by: <br>
+Date: July 23, 2024 <br>
 
 Please feel free to contact naultran[at]msu.edu if you have any questions about this material. 

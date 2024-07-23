@@ -1,0 +1,539 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  markdown: 
+    wrap: 200
+---
+
+# Introduction
+
+This hands-on tutorial will explore MIX-Seq data which examines the response of *25 - 100 cancer cell lines* and *13 drugs*. We will closely follow the [example published by the MIX-Seq team
+here](https://cancerdatascience.org/blog/posts/mix-seq/).
+
+**Learning objectives:**
+
+-   Be able to load published single-cell data to ask your own research questions.
+
+-   Assess the quality of single-cell datasets.
+
+-   Identify and understand the value of metadata.
+
+-   Apply various visualization approaches to explore published single-cell data.
+
+    --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 1. Set-up analysis R environment
+
+::: {style="border: 8px solid orange"}
+**Before you start:**
+
+We need to tell R Studio where to find the files that we will be using as part of this notebook. Instructions on where to download these are in the notebook, but because of their sizes we have
+pre-downloaded them onto a shared space on the HPC. **Be sure to do the following before running this code:**
+
+1.  Clear objects from the workspace (broom in upper right)
+2.  Restart R session (Session menu)
+3.  Paste the following into the **Console**:
+
+.libPaths( c("/mnt/research/IPSTP_2024/IPSTP_Nault/R_IPSTP_custom_libs", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/arrow-R/14.0.0.2-foss-2023a-R-4.3.2" ) )
+:::
+
+### 1.A. Load your R libraries
+
+As part of this workshop we have set up pre-developed R environments so that all packages have been installed correctly. If you need to set up your own R environment you can install the packages using
+the following examples (*change \<package-name\> portion*).
+
+<div>
+
+Use this for CRAN packages:
+
+*install.packages("**\<package-name\>**")*
+
+or this for BioConductor packages:
+
+\*if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+BiocManager::install("\<**package-name\>**")\*
+
+</div>
+
+```{r}
+suppressPackageStartupMessages({
+  library(ggrepel)    # CRAN
+  library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2")     # CRAN
+  library(Matrix)     # CRAN
+  library(tidyverse)  # CRAN
+  library(limma)      # BioConductor
+  library(edgeR)      # BioConductor
+  library(pheatmap)   # CRAN
+  library(cowplot)    # CRAN
+})
+```
+
+### 1.B. Download data
+
+The MIX-seq datasets can be downloaded from [Figshare](https://figshare.com/articles/dataset/MIX-seq_data/10298696). Here the datasets *do not* represent raw sequencing data (not available), but
+rather datasets which have *previously been processed and annotated*. These data are saved as folders for each treatment group with the following files: - matrix.mtx: read counts in matrix market
+format (sparse matrix) - barcodes.tsv: an ordered list of barcodes - genes.tsv: an ordered list of genes - classifications.csv: A metadata table
+
+For the purposes of this workshop we have already downloaded all the datasets. This code chunk will show what treatment groups were downloaded and can be examined further.
+
+```{r}
+# List all directories in the current working directory
+folders <- list.dirs(path = "/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/", full.names = FALSE, recursive = FALSE)
+
+# Print the list of directories
+print(folders)
+```
+
+### 1.C. Load MIX-Seq data
+
+We will start by defining a function called `load_mixseq_data` which imports and formats the data into a Seurat object.
+
+```{r}
+load_mixseq_data <- function(expt_dir, condition) {
+  # Load the expression matrix
+  counts <- Matrix::readMM(file.path(expt_dir, 'matrix.mtx'))
+  
+  # Load and set gene names as rownames
+  rownames(counts) <- readr::read_tsv(file.path(expt_dir, 'genes.tsv'), col_names = FALSE)$X2
+  
+  # Remove duplicate gene names
+  counts <- counts[!duplicated(rownames(counts)),]
+  
+  # Load and set barcode names as colnames
+  colnames(counts) <- readr::read_tsv(file.path(expt_dir, 'barcodes.tsv'), col_names = FALSE)$X1
+  
+  # Load classifications and add condition information
+  classifications <- readr::read_csv(file.path(expt_dir, 'classifications.csv')) %>%
+    dplyr::mutate(condition = condition) %>%   # Add condition column
+    tibble::column_to_rownames("barcode") %>%  # Set barcodes as rownames
+    as.data.frame()                            # Convert to data frame
+  
+  # Create Seurat object with counts matrix and metadata
+  sc_data <- Seurat::CreateSeuratObject(counts, meta.data = classifications)
+  
+  # Return the created Seurat object
+  return(sc_data)
+}
+```
+
+Using this function we will load the **Trametinib** 24hr dataset to explore, as well as the matched DMSO control group. We merge them so that they can be evaluated as the same time.
+
+```{r}
+# Load Idasanutlin treatment data
+trametinib_data <- load_mixseq_data("/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/Trametinib_24hr_expt3", "Trametinib")
+
+# Load DMSO control data
+dmso_data <- load_mixseq_data("/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/DMSO_24hr_expt3", "DMSO")
+
+# Merge the Idasanutlin and DMSO Seurat objects
+sc_data <- merge(trametinib_data, dmso_data)
+
+# Join layers of the merged Seurat object (typically used to integrate multiple assays)
+sc_data <- JoinLayers(sc_data)
+```
+
+> *Note: you will see some red warnings about columns, delimiters, and format. This is an artifact about how the data was saved but will not cause problems for the next steps.*
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 2. (meta)Data QC
+
+When working with any data, it's crucial to recognize that your dataset has two key components: the *actual data* and the *metadata*. The actual data consists of the raw or processed measurements from
+your experiment, such as gene expression counts. However, equally important is the metadata, which is the data about the data.
+
+Rich metadata is essential for understanding, analyzing, and reusing your data. Metadata provides context and additional information that can include:
+
+-   **Sample Information**: Identifiers for each sample, what treatment group they belong to, species, sex, and any other relevant biological or experimental variables.
+-   **Experimental Conditions**: Details about the experimental setup, such as time points, dosages, and control conditions.
+-   **Technical Information**: Information about the sequencing technology, library preparation methods, and any technical replicates.
+
+We will start by displaying the metadata table so that we can begin to understand what we have and what we can/can't do.
+
+```{r}
+meta = sc_data@meta.data
+print(meta)
+```
+
+Many of these columns we don't have enough information to interpret unless we read the manuscript (*e.g., singlet_dev*). However, others are pretty standard such as:
+
+-   `nCount_RNA`: The total number of RNA molecules detected in each cell.
+-   `nFeature_RNA`: The number of different genes detected in each cell.
+-   `tot_reads`: The total number of sequencing reads for each cell.
+-   `percent.mito`: The percentage of reads that are mitochondrial in origin, often used as a quality control metric.
+-   `cell_quality`: A pre-calculated column indicating the overall quality of the cell's data.
+-   `DepMap_ID`: An identifier linking the sample to the DepMap database for additional context or metadata.
+-   `condition`: The experimental condition or treatment group the sample belongs to (e.g., Idasanutlin, DMSO).
+
+### 2.A. Quality control
+
+There are common metrics used for quality control of single-cell sequencing data: - total number of RNA molecules (`nCount_RNA`): This metric represents the total number of RNA molecules detected in
+each cell, providing an indication of the overall transcriptional activity within each cell. - total number of genes detected (`nFeature_RNA`): This metric indicates the number of different genes
+detected in each cell, giving insight into the diversity of gene expression. - percentage of mitochondrial reads (`percent.mito`): This metric measures the proportion of reads that are of
+mitochondrial origin, often used as an indicator of cell quality, as high mitochondrial read percentages can suggest cell stress or damage.
+
+The datasets have already calculated these metrics, however these could be calculated using the following code *(note: some of these are automatically calculated using CreateSeuratObject)*.
+
+```{r}
+# Identify mitochondrial genes
+mito_genes <- grep(pattern = "^MT-", x = rownames(sc_data), value = TRUE)
+
+# Calculate percent mitochondrial counts
+# We use percent.mito2 to not overwrite existing percent.mito column
+sc_data[["percent.mito2"]] <- PercentageFeatureSet(sc_data, features = mito_genes)
+
+```
+
+Because we have these calculated we will simply visualize them as violin plots.
+
+```{r fig.height = 8, fig.width = 6}
+VlnPlot(sc_data, features = c('nCount_RNA', 'nFeature_RNA', 'percent.mito'), ncol = 2)
+```
+
+Now let's see how this compares to the previously assessed quality assignments.
+
+```{r fig.height = 8, fig.width = 6}
+VlnPlot(sc_data, features = c('nCount_RNA', 'nFeature_RNA', 'percent.mito'), ncol = 2, group.by = 'cell_quality')
+```
+
+We can also examine this using a `FeatureScatter` plot. Here, we check that there is no correlation between the RNA counts and the percentage of mitochondrial reads, as a high percentage of
+mitochondrial reads can indicate cell stress or damage rather than true biological variation. Conversely, the total genes and features should be highly correlated, as obtaining more reads from a cell
+increases the probability of detecting more different genes.
+
+```{r fig.width = 12, fig.height = 4}
+plot1 = FeatureScatter(sc_data, feature1 = "nCount_RNA", feature2 = "percent.mito", group.by = 'cell_quality')
+plot2 = FeatureScatter(sc_data, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = 'cell_quality')
+plot1 + plot2
+```
+
+### 2.B. Remove poor quality cells
+
+Our next step is to filter the poor quality cells before moving onto the next steps. Here we print the initial number of cells in `sc_data`, filters the cells based on their quality, and then prints
+the number of cells remaining after filtering.
+
+```{r}
+# Print the number of cells before filtering
+cat("The number of cells before filtering is:", ncol(sc_data), "\n")
+
+# Filter the cells based on cell quality
+sc_data <- sc_data[, sc_data@meta.data$cell_quality == "normal"]
+
+# Print the number of cells after filtering
+cat("The number of cells after filtering is:", ncol(sc_data), "\n")
+```
+
+### 2.C. Normalization and dimension reduction
+
+Once we've removed the poor quality cells we want to prepare the data for further processing and visualization. This starts with normalization to ensure that gene expression values are comparable
+across cells. Following normalization, we scale the data to further standardize gene expression distributions. We then identify 5000 variable genes using `Seurat::FindVariableFeatures` as these most
+variable genes are most likely to drive differences between cell lines and conditions. Subsequently, Principal Component Analysis (PCA) is performed on these variable features to reduce the data's
+dimensionality while preserving critical information about cell-to-cell variability. Finally, we apply Uniform Manifold Approximation and Projection (UMAP) for nonlinear dimensionality reduction,
+enabling visualization and exploration of the data's structure in a lower-dimensional space
+
+```{r}
+# Determine the number of principal components (PCs) to use based on the number of unique singlet IDs
+npcs <- length(unique(sc_data$singlet_ID)) * 2
+
+# Normalize the data
+sc_data <- Seurat::NormalizeData(sc_data, verbose = FALSE)
+
+# Scale the data
+sc_data <- Seurat::ScaleData(sc_data, verbose = FALSE)
+
+# Find variable features (genes) to focus on
+sc_data <- Seurat::FindVariableFeatures(sc_data, nfeatures = 5000, verbose = FALSE)
+
+# Perform Principal Component Analysis (PCA) using the variable features
+sc_data <- Seurat::RunPCA(sc_data, features = VariableFeatures(sc_data), npcs = npcs, verbose = FALSE)
+
+# Run UMAP (Uniform Manifold Approximation and Projection) for dimensionality reduction
+sc_data <- Seurat::RunUMAP(sc_data, dims = 1:npcs, n.neighbors = 10, verbose = FALSE)
+```
+
+**Plot the data by labeling each cell line (**`singled_id`**) inferred from SNP profile)**
+
+```{r fig.height = 10}
+Seurat::DimPlot(sc_data,group.by = "singlet_ID",label = T,repel = T) + guides(color = F)
+```
+
+**Plot the data but now use condition as grouping factor**
+
+```{r fig.height = 7}
+Seurat::DimPlot(sc_data,group.by = "condition")
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+**What is different here when you compare it to Idasanutlin?**
+:::
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 3. Mapping to viability data
+
+We want to explore an example where we can integrate single-cell data with other big data source. Here we can use viability data collected from the [PRISM assay](https://www.theprismlab.org/) which
+can be downloaded directly from [DepMap](https://depmap.org). We will use the **PRISM Repurposing 19Q4 'secondary-screen-dose-response-curve-parameters.csv'** file. Just as we did with the single-cell
+data, we already downloaded and provide the file on the HPC. Lets start by looking at the file structure.
+
+```{r}
+trametinib_sensitivity <- read_csv("/mnt/scratch/naultran/IPSTP_BootCamp2024/downloads/MIX_seq/secondary-screen-dose-response-curve-parameters.csv")
+head(trametinib_sensitivity)
+```
+
+The table contains several metrics but only a few will be of interest to us here:
+
+-   **ccle_name:** Name of the cancer cell line.
+
+-   **screen_id:** ID to identify a screen (*MTS010 contains our cell lines of interest*).
+
+-   **auc:** Area under the dose response curve for viability.
+
+-   **name:** Name of drug.
+
+We only want to focus on the Trametinib compound so we will filter the dataset. This step ensures that we are working with the relevant subset of data for our analysis.
+
+```{r}
+trametinib_sensitivity <- read_csv("/mnt/scratch/naultran/IPSTP_BootCamp2024/downloads/MIX_seq/secondary-screen-dose-response-curve-parameters.csv") %>%
+  dplyr::filter(screen_id == "MTS010",name == "trametinib")
+head(trametinib_sensitivity)
+```
+
+Then, we merge this sensitivity data with our existing metadata. We start by summarizing the metadata to group by singlet_ID and condition, ensuring each combination is unique. We then join the
+Trametinib sensitivity data to this summarized metadata using the singlet_ID. Finally, we filter out any rows with missing AUC (Area Under the Curve) values, as these are not informative, and
+calculate a sensitivity score for each cell line based on the AUC. The sensitivity score is computed as 1 minus the AUC (`1-auc`), where a higher score indicates higher sensitivity to Trametinib. This
+merged dataset will be used for subsequent analyses.
+
+```{r}
+summed_metadata <- sc_data@meta.data %>% dplyr::group_by(singlet_ID,condition) %>%
+  dplyr::summarise() %>% dplyr::ungroup() %>%
+  dplyr::left_join(trametinib_sensitivity,by = c("singlet_ID" = "ccle_name")) %>%
+  dplyr::filter(!is.na(auc)) %>% dplyr::mutate(sensitivity = (1-auc))
+```
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 4. Differential expression analysis
+
+We can dive deeper into the effects of Trametinib gene expression by performing differential expression analysis.
+
+First, we will generate pseudo-bulk gene expression datasets using the function `group_sum`. We do this because recent studies have shown that a pseudo-bulk approach produces fewer false positives
+compared to other methods which consider each individual cell, such as the Wilcoxon rank sum approach.
+
+```{r}
+group_sum <- function(group) {
+  Matrix::rowSums(Seurat::GetAssayData(sc_data, slot = 'counts')[,group$ID,drop = FALSE])}
+
+# Generate pseudo-bulk gene expression datasets using custom function group_sum
+summed_counts <- sc_data@meta.data %>% 
+  tibble::rownames_to_column(var = 'ID') %>%  # Convert row names to a column for easy manipulation
+  dplyr::filter(singlet_ID %in% summed_metadata$singlet_ID) %>%  # Filter for relevant singlet_IDs
+  dplyr::group_split(singlet_ID, condition) %>%  # Split data by singlet_ID and condition
+  plyr::laply(.fun = group_sum)  # Apply group_sum function to each group to create pseudo-bulk datasets
+```
+
+We prepare the pseudo-bulk counts for differential expression analysis using the edgeR package. First, we convert `summed_counts` into a DGEList object (`edgeR::DGEList(t(summed_counts))`), which is a
+specialized data structure used for differential gene expression analysis. We then normalize these counts using the TMMwsp (Trimmed Mean of M-values with Weighted Trimmed Mean of M-values Scaling
+Factor) method (`edgeR::calcNormFactors(method = 'TMMwsp')`), ensuring that samples are comparable across libraries. Subsequently, we transform these normalized counts into counts per million (CPM)
+with a log transformation (`edgeR::cpm(log = TRUE, prior.count = 1)`), which stabilizes variance and prepares the data for downstream statistical analysis.
+
+```{r}
+# Convert summed_counts into a DGEList object for differential expression analysis
+log_summed_counts <- edgeR::DGEList(t(summed_counts)) %>%
+  # Normalize counts using the TMMwsp method
+  edgeR::calcNormFactors(method = 'TMMwsp') %>%
+  # Transform normalized counts into counts per million (CPM) with log transformation
+  edgeR::cpm(log = TRUE, prior.count = 1)
+```
+
+Next we set up the design matrix and contrasts necessary for differential expression analysis using the limma package. First, we construct a design matrix (`design`) specifying the model formula
+`~0 + condition + singlet_ID + I(is_treat*sensitivity)` based on `summed_metadata`. This formula sets up a model without an intercept (`~0`) and includes `condition`, `singlet_ID`, and an interaction
+term `I(is_treat*sensitivity)` as predictors, allowing us to account for both biological conditions, individual sample variability, and the interaction between treatment and sensitivity. We then
+define a contrast matrix (`cm`) using `limma::makeContrasts()`, where we specify the contrasts of interest: `independent` (comparing gene expression between the 'Trametinib' treatment condition and
+the 'DMSO' control condition) and `related` (assessing the interaction between treatment and sensitivity). These preparatory steps lay the foundation for conducting statistical tests to identify genes
+that are differentially expressed under different experimental conditions.
+
+```{r}
+# Add an indicator for treatment condition to the metadata
+summed_metadata <- dplyr::mutate(summed_metadata,
+                                 is_treat = ifelse(condition == "Trametinib", 1, 0))
+
+# Construct the design matrix for differential expression analysis
+design <- model.matrix(~0 + condition + singlet_ID + I(is_treat * sensitivity),
+                       data = summed_metadata)
+colnames(design)[ncol(design)] <- 'is_treat_sens'
+
+# Define the contrast matrix for the comparisons of interest
+cm <- limma::makeContrasts(
+  contrasts = list(independent = "conditionTrametinib - conditionDMSO",
+                   related = "is_treat_sens"),
+  levels = make.names(colnames(design))
+)
+```
+
+Differential expression analysis is performed on the log-transformed and normalized counts (`log_summed_counts`). First, we fit linear models (fit) to the log-transformed counts based on the design
+matrix (design), which incorporates both the experimental conditions (condition) and individual sample identifiers (singlet_ID). Next, we apply the predefined contrasts (cm) to these linear models
+using `limma::contrasts.fit() (fit2)`, enabling us to **compare gene expression between the 'Trametinib' treatment and 'DMSO' control** conditions specified earlier. Subsequently, we use empirical
+Bayes moderation (`limma::eBayes(fit2, trend = TRUE`), fit3) to improve the estimation of variances, which enhances the robustness of differential expression results. Finally, we extract
+differentially expressed genes (`diff_expr`) using `limma::topTable()`, identifying genes with significant expression changes across conditions based on specified criteria.
+
+```{r}
+# Fit linear models to the log-transformed counts using the design matrix
+fit <- limma::lmFit(log_summed_counts, design)
+
+# Apply the predefined contrasts to the linear models
+fit2 <- limma::contrasts.fit(fit, contrasts = cm)
+
+# Use empirical Bayes moderation to improve variance estimation
+fit3 <- limma::eBayes(fit2, trend = TRUE)
+
+# Extract differentially expressed genes for the 'independent' contrast
+independent <- limma::topTable(fit3, coef = "conditionTrametinib - conditionDMSO",
+                               number = Inf, genelist = rownames(log_summed_counts))
+
+# Extract differentially expressed genes for the 'related' contrast
+related <- limma::topTable(fit3, coef = "is_treat_sens", number = Inf,
+                           genelist = rownames(log_summed_counts))
+
+```
+
+Finally we visualize the differential expression using a volcano plot.
+
+```{r}
+# Create a volcano plot for the 'independent' contrast
+independent %>%
+  # Initialize the ggplot with logFC and -log10(P.Value) as the x and y axes
+  ggplot(aes(logFC, -log10(P.Value))) +
+  
+  # Add points to the plot, color them based on the P.Value threshold
+  geom_point(aes(color = P.Value < .05)) +
+  
+  # Add labels to the points with absolute logFC greater than 2
+  geom_text_repel(data = independent %>% filter(abs(logFC) > 2), aes(label = ID)) +
+  
+  # Remove the legend for the color aesthetic
+  guides(color = F) +
+  
+  # Add a title to the plot
+  ggtitle("Viability-independent") +
+  
+  # Use the black and white theme
+  theme_bw()
+
+```
+
+To proceed with our analysis, we first summarize the metadata by grouping it according to each unique singlet_ID and extracting the first sensitivity value for each group. This step consolidates our
+metadata, ensuring we have a clear view of each cell line's sensitivity to the experimental conditions.
+
+Next, we calculate the total number of distinct cell lines represented in our dataset, which is essential for subsequent calculations and visualizations.
+
+We then compute the log-fold change for the summed counts of gene expressions across our cell lines. This transformation allows us to analyze differential gene expression patterns across conditions
+effectively.
+
+Following that, we assign the singlet_IDs as column names to the log-fold change matrix, ensuring clarity and consistency in our data structure.
+
+Arranging our cell line metadata by sensitivity helps us to understand how sensitivity varies across different cell lines, providing valuable context for interpreting our results.
+
+To identify genes with the most significant differential expression, we select the top 25 genes with the highest absolute log-fold change. These genes will be the focus of our heatmap visualization,
+highlighting their expression patterns across the various cell lines.
+
+```{r}
+# Summarize the metadata by grouping by singlet_ID and extracting the first sensitivity value
+cell_line_metadata <- summed_metadata %>% dplyr::group_by(singlet_ID) %>%
+  dplyr::summarise(sensitivity = first(sensitivity)) %>% dplyr::ungroup()
+
+# Calculate the number of cell lines
+n_cls <- nrow(cell_line_metadata)
+
+# Compute log fold change for the summed counts
+logfc_summed_counts <- log_summed_counts[,(1:n_cls)*2] - log_summed_counts[,(1:n_cls)*2 -1]
+
+# Set column names to the singlet_IDs
+colnames(logfc_summed_counts) <- cell_line_metadata$singlet_ID
+
+# Arrange cell line metadata by sensitivity
+cell_line_metadata <- cell_line_metadata %>% arrange(sensitivity)
+
+# Select the top 25 genes with the highest absolute log fold change
+top_idependent_genes <- independent %>% dplyr::arrange(-abs(logFC)) %>% head(25) %>% .[["ID"]]
+
+# Generate a heatmap for the top independent genes
+pheatmap(logfc_summed_counts[top_idependent_genes, cell_line_metadata$singlet_ID],
+         treeheight_row = 0, treeheight_col = 0, cluster_cols = F, show_colnames = F,
+         annotation_col = cell_line_metadata %>%
+         tibble::column_to_rownames('singlet_ID') %>% as.data.frame())
+```
+
+In parallel, we create a volcano plot specifically for **genes related to viability**. This plot visualizes the relationship between log-fold change and statistical significance (P-value), with points
+colored based on their significance level. Labels are added to genes with an absolute log-fold change greater than 2.9, aiding in the identification of key genes of interest.
+
+```{r}
+# Create a volcano plot for viability-related genes
+related %>% 
+  ggplot(aes(logFC, -log10(P.Value))) + 
+  # Add points, color them by significance (P.Value < 0.05)
+  geom_point(aes(color = P.Value < .05)) +
+  # Add labels to points with absolute logFC > 2.9
+  geom_text_repel(data = related %>% filter(abs(logFC) > 2.9), aes(label = ID)) +
+  # Remove legend for color
+  guides(color = FALSE) +
+  # Add title
+  ggtitle("Viability-related") + 
+  # Use the black and white theme
+  theme_bw()
+```
+
+Once again we will plot a heatmap of the top 25 genes except that these are genes which were found to be related to sensitivity.
+
+```{r}
+# Identify the top 25 viability-related genes based on logFC
+top_related_genes <- related %>% dplyr::arrange(-abs(logFC)) %>% head(25) %>% .[["ID"]]
+
+# Create a heatmap of the top viability-related genes
+pheatmap::pheatmap(
+  logfc_summed_counts[top_related_genes, cell_line_metadata$singlet_ID],
+  treeheight_row = 0,  # Remove row tree
+  treeheight_col = 0,  # Remove column tree
+  cluster_cols = FALSE,  # Do not cluster columns
+  show_colnames = FALSE,  # Do not show column names
+  annotation_col = cell_line_metadata %>%
+    tibble::column_to_rownames('singlet_ID') %>%  # Convert 'singlet_ID' to row names
+    as.data.frame()  # Convert to data frame
+)
+
+```
+
+For a more in depth visualization, we will pick 2 genes which were found to be independent (EGR1 and ETV4) and 2 that were found to be related (E2F2 and PDZK1IP1) and run a simple linear regression to
+see if the pattern related to sensitivity becomes more apparent.
+
+```{r}
+# Define the genes of interest
+genes <- c("EGR1", "ETV4", "E2F2", "PDZK1IP1")
+
+# Extract the expression data for the specified genes
+gene_expressions <- logfc_summed_counts[genes, ]
+
+# Prepare the data for plotting
+plot_data <- data.frame(
+  Sensitivity = cell_line_metadata$sensitivity,  # Sensitivity values from cell line metadata
+  Gene = rep(genes, each = nrow(cell_line_metadata)),  # Repeat gene names for each cell line
+  Expression = as.vector(t(gene_expressions)),  # Flatten the gene expression matrix to a vector
+  stringsAsFactors = FALSE  # Do not convert strings to factors
+)
+
+# Create the scatter plot with trendlines
+ggplot(plot_data, aes(x = Expression, y = Sensitivity, color = Gene)) +
+  geom_point() +  # Plot data points
+  geom_smooth(method = "lm", se = FALSE) +  # Add linear model (OLS) trendline without confidence interval
+  labs(x = "Gene Expression", y = "Sensitivity") +  # Label the axes
+  facet_wrap(~ Gene, scales = "free_x") +  # Facet by gene with free x-axis scales
+  theme_bw()  # Apply a black and white theme
+
+
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+**What can we tell from the Trametinib sensitivity integration?**
+:::

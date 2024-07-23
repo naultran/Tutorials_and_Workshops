@@ -1,0 +1,537 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  markdown: 
+    wrap: 200
+---
+
+# Introduction
+
+This hands-on tutorial will explore MIX-Seq data which examines the response of *25 - 100 cancer cell lines* and *13 drugs*. We will closely follow the [example published by the MIX-Seq team
+here](https://cancerdatascience.org/blog/posts/mix-seq/).
+
+**Learning objectives:**
+
+-   Be able to load published single-cell data to ask your own research questions.
+
+-   Assess the quality of single-cell datasets.
+
+-   Identify and understand the value of metadata.
+
+-   Apply various visualization approaches to explore published single-cell data.
+
+    --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 1. Set-up analysis R environment
+
+::: {style="border: 8px solid orange"}
+**Before you start:**
+
+We need to tell R Studio where to find the files that we will be using as part of this notebook. Instructions on where to download these are in the notebook, but because of their sizes we have
+pre-downloaded them onto a shared space on the HPC. **Be sure to do the following before running this code:**
+
+1.  Clear objects from the workspace (broom in upper right)
+2.  Restart R session (Session menu)
+3.  Paste the following into the **Console**:
+
+.libPaths( c("/mnt/research/IPSTP_2024/IPSTP_Nault/R_IPSTP_custom_libs", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2",
+"/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/arrow-R/14.0.0.2-foss-2023a-R-4.3.2" ) )
+:::
+
+### 1.A. Load your R libraries
+
+As part of this workshop we have set up pre-developed R environments so that all packages have been installed correctly. If you need to set up your own R environment you can install the packages using
+the following examples (*change \<package-name\> portion*).
+
+<div>
+
+Use this for CRAN packages:
+
+*install.packages("**\<package-name\>**")*
+
+or this for BioConductor packages:
+
+\*if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+BiocManager::install("\<**package-name\>**")\*
+
+</div>
+
+```{r}
+suppressPackageStartupMessages({
+  library(ggrepel)    # CRAN
+  library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2")     # CRAN
+  library(Matrix)     # CRAN
+  library(tidyverse)  # CRAN
+  library(limma)      # BioConductor
+  library(edgeR)      # BioConductor
+  library(pheatmap)   # CRAN
+  library(cowplot)    # CRAN
+
+})
+```
+
+### 1.B. Download data
+
+The MIX-seq datasets can be downloaded from [Figshare](https://figshare.com/articles/dataset/MIX-seq_data/10298696). Here the datasets *do not* represent raw sequencing data (not available), but
+rather datasets which have *previously been processed and annotated*. These data are saved as folders for each treatment group with the following files: - matrix.mtx: read counts in matrix market
+format (sparse matrix) - barcodes.tsv: an ordered list of barcodes - genes.tsv: an ordered list of genes - classifications.csv: A metadata table
+
+For the purposes of this workshop we have already downloaded all the datasets. This code chunk will show what treatment groups were downloaded and can be examined further.
+
+```{r}
+# List all directories in the current working directory
+folders <- list.dirs(path = "/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/", full.names = FALSE, recursive = FALSE)
+
+# Print the list of directories
+print(folders)
+```
+
+### 1.C. Load MIX-Seq data
+
+We will start by defining a function called `load_mixseq_data` which imports and formats the data into a Seurat object.
+
+```{r}
+load_mixseq_data <- function(expt_dir, condition) {
+  # Load the expression matrix
+  counts <- Matrix::readMM(file.path(expt_dir, 'matrix.mtx'))
+  
+  # Load and set gene names as rownames
+  rownames(counts) <- readr::read_tsv(file.path(expt_dir, 'genes.tsv'), col_names = FALSE)$X2
+  
+  # Remove duplicate gene names
+  counts <- counts[!duplicated(rownames(counts)),]
+  
+  # Load and set barcode names as colnames
+  colnames(counts) <- readr::read_tsv(file.path(expt_dir, 'barcodes.tsv'), col_names = FALSE)$X1
+  
+  # Load classifications and add condition information
+  classifications <- readr::read_csv(file.path(expt_dir, 'classifications.csv')) %>%
+    dplyr::mutate(condition = condition) %>%   # Add condition column
+    tibble::column_to_rownames("barcode") %>%  # Set barcodes as rownames
+    as.data.frame()                            # Convert to data frame
+  
+  # Create Seurat object with counts matrix and metadata
+  sc_data <- Seurat::CreateSeuratObject(counts, meta.data = classifications)
+  
+  # Return the created Seurat object
+  return(sc_data)
+}
+```
+
+Using this function we will load the **Isadanutlin** 24hr dataset to explore, as well as the matched DMSO control group. We merge them so that they can be evaluated as the same time.
+
+> *Note: Idasanutlin is an MDM2 antagonist which results in the activation of p53 leading to G1/G2 cell cycle arrest.*
+
+<img src="https://www.frontiersin.org/files/Articles/553838/fphar-11-01156-HTML/image_m/fphar-11-01156-g001.jpg" width="800"/>
+
+**Load the datasets using the** `load_mixseq_data` **function:**
+
+```{r}
+# Load Idasanutlin treatment data
+nutlin_data <- load_mixseq_data("/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/Idasanutlin_24hr_expt1", "Idasanutlin")
+
+# Load DMSO control data
+dmso_data <- load_mixseq_data("/mnt/research/IPSTP_2024/IPSTP_Nault/downloads/MIX_seq/DMSO_24hr_expt1", "DMSO")
+
+# Merge the Idasanutlin and DMSO Seurat objects
+sc_data <- merge(nutlin_data, dmso_data)
+
+# Join layers of the merged Seurat object (typically used to integrate multiple assays)
+sc_data <- JoinLayers(sc_data)
+```
+
+> *Note: you will see some red warnings about columns, delimiters, and format. This is an artifact about how the data was saved but will not cause problems for the next steps.*
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 2. (meta)Data QC
+
+When working with any data, it's crucial to recognize that your dataset has two key components: the *actual data* and the *metadata*. The actual data consists of the raw or processed measurements from
+your experiment, such as gene expression counts. However, equally important is the metadata, which is the data about the data.
+
+Rich metadata is essential for understanding, analyzing, and reusing your data. Metadata provides context and additional information that can include:
+
+-   **Sample Information**: Identifiers for each sample, what treatment group they belong to, species, sex, and any other relevant biological or experimental variables.
+-   **Experimental Conditions**: Details about the experimental setup, such as time points, dosages, and control conditions.
+-   **Technical Information**: Information about the sequencing technology, library preparation methods, and any technical replicates.
+
+We will start by displaying the metadata table so that we can begin to understand what we have and what we can/can't do.
+
+```{r}
+meta = sc_data@meta.data
+print(meta)
+```
+
+Many of these columns we don't have enough information to interpret unless we read the manuscript (*e.g., singlet_dev*) or [related
+documentation](https://github.com/broadinstitute/single_cell_classification). However, others are pretty standard such as:
+
+-   `nCount_RNA`: The total number of RNA molecules detected in each cell.
+-   `nFeature_RNA`: The number of different genes detected in each cell.
+-   `tot_reads`: The total number of sequencing reads for each cell.
+-   `percent.mito`: The percentage of reads that are mitochondrial in origin, often used as a quality control metric.
+-   `cell_quality`: A pre-calculated column indicating the overall quality of the cell's data.
+-   `DepMap_ID`: An identifier linking the sample to the DepMap database for additional context or metadata.
+-   `condition`: The experimental condition or treatment group the sample belongs to (e.g., Idasanutlin, DMSO).
+
+### 2.A. Quality control
+
+There are common metrics used for quality control of single-cell sequencing data: - total number of RNA molecules (`nCount_RNA`): This metric represents the total number of RNA molecules detected in
+each cell, providing an indication of the overall transcriptional activity within each cell. - total number of genes detected (`nFeature_RNA`): This metric indicates the number of different genes
+detected in each cell, giving insight into the diversity of gene expression. - percentage of mitochondrial reads (`percent.mito`): This metric measures the proportion of reads that are of
+mitochondrial origin, often used as an indicator of cell quality, as high mitochondrial read percentages can suggest cell stress or damage.
+
+The datasets have already calculated these metrics, however these could be calculated using the following code *(note: some of these are automatically calculated using CreateSeuratObject)*.
+
+```{r}
+# Identify mitochondrial genes
+mito_genes <- grep(pattern = "^MT-", x = rownames(sc_data), value = TRUE)
+
+# Calculate percent mitochondrial counts
+# We use percent.mito2 to not overwrite existing percent.mito column
+sc_data[["percent.mito2"]] <- PercentageFeatureSet(sc_data, features = mito_genes)
+
+```
+
+Because we have these calculated we will visualize them as violin plots using the `VlnPlot` function.
+
+```{r fig.height = 8, fig.width = 6}
+VlnPlot(sc_data, features = c('nCount_RNA', 'nFeature_RNA', 'percent.mito'), ncol = 2)
+```
+
+Now let's see how this compares to the previously assessed quality assignments by grouping (`group.by`) the data by the "cell_quality" column.
+
+```{r fig.height = 8, fig.width = 6}
+VlnPlot(sc_data, features = c('nCount_RNA', 'nFeature_RNA', 'percent.mito'), ncol = 2, group.by = 'cell_quality')
+```
+
+We can also examine this using a `FeatureScatter` plot. Here, we check that there is no correlation between the RNA counts and the percentage of mitochondrial reads, as a high percentage of
+mitochondrial reads can indicate cell stress or damage rather than true biological variation. Conversely, the total genes and features should be highly correlated, as obtaining more reads from a cell
+increases the probability of detecting more different genes.
+
+```{r fig.width = 12, fig.height = 4}
+plot1 = FeatureScatter(sc_data, feature1 = "nCount_RNA", feature2 = "percent.mito", group.by = 'cell_quality')
+plot2 = FeatureScatter(sc_data, feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = 'cell_quality')
+plot1 + plot2
+```
+
+### 2.B. Remove poor quality cells
+
+Our next step is to filter the poor quality cells before moving onto the next steps. Here we print the initial number of cells in `sc_data`, filters the cells based on their quality, and then prints
+the number of cells remaining after filtering.
+
+```{r}
+# Print the number of cells before filtering
+cat("The number of cells before filtering is:", ncol(sc_data), "\n")
+
+# Filter the cells based on cell quality
+sc_data <- sc_data[, sc_data@meta.data$cell_quality == "normal"]
+
+# Print the number of cells after filtering
+cat("The number of cells after filtering is:", ncol(sc_data), "\n")
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+**Try it out!** How would you evaluate the quality of the data by condition?
+:::
+
+```{r}
+# Test your code here
+
+
+```
+
+::: {style="border: 8px solid blue; text-align: center"}
+**Answer:** VlnPlot(sc_data, features = c('nCount_RNA', 'nFeature_RNA', 'percent.mito'), ncol = 2, group.by = 'condition')
+:::
+
+### 2.C. Normalization and dimension reduction
+
+Once we've removed the poor quality cells we want to prepare the data for further processing and visualization. This starts with normalization to ensure that gene expression values are comparable
+across cells. Following normalization, we scale the data to further standardize gene expression distributions. We then identify 5000 variable genes using `Seurat::FindVariableFeatures` as these most
+variable genes are most likely to drive differences between cell lines and conditions. Subsequently, Principal Component Analysis (PCA) is performed on these variable features to reduce the data's
+dimensionality while preserving critical information about cell-to-cell variability. Finally, we apply Uniform Manifold Approximation and Projection (UMAP) for nonlinear dimensionality reduction,
+enabling visualization and exploration of the data's structure in a lower-dimensional space
+
+```{r}
+# Determine the number of principal components (PCs) to use based on the number of unique singlet IDs
+npcs <- length(unique(sc_data$singlet_ID)) * 2
+
+# Normalize the data
+sc_data <- Seurat::NormalizeData(sc_data, verbose = FALSE)
+
+# Scale the data
+sc_data <- Seurat::ScaleData(sc_data, verbose = FALSE)
+
+# Find variable features (genes) to focus on
+sc_data <- Seurat::FindVariableFeatures(sc_data, nfeatures = 5000, verbose = FALSE)
+
+# Perform Principal Component Analysis (PCA) using the variable features
+sc_data <- Seurat::RunPCA(sc_data, features = VariableFeatures(sc_data), npcs = npcs, verbose = FALSE)
+
+# Run UMAP (Uniform Manifold Approximation and Projection) for dimensionality reduction
+sc_data <- Seurat::RunUMAP(sc_data, dims = 1:npcs, n.neighbors = 10, verbose = FALSE)
+```
+
+**Plot the data by labeling each cell line (**`singled_id`**) inferred from SNP profile)**
+
+```{r fig.height = 10}
+Seurat::DimPlot(sc_data,group.by = "singlet_ID",label = T,repel = T) + guides(color = F)
+```
+
+**Plot the data but now use condition as grouping factor**
+
+```{r fig.height = 7}
+Seurat::DimPlot(sc_data,group.by = "condition")
+```
+
+**Plot the data, this time adding the status of TP53 (wild-type or mutant)**
+
+```{r fig.height = 7}
+# Add TP53 mutation status metadata based on singlet_ID
+sc_data <- Seurat::AddMetaData(sc_data, ifelse(sc_data$singlet_ID %in%
+   c('LNCAPCLONEFGC_PROSTATE', 'DKMG_CENTRAL_NERVOUS_SYSTEM',
+     'NCIH226_LUNG', 'RCC10RGB_KIDNEY', 'SNU1079_BILIARY_TRACT',
+     'CCFSTTG1_CENTRAL_NERVOUS_SYSTEM', 'COV434_OVARY'), "TP53_WT", "TP53_MUT"), "TP53_status")
+
+# Combine condition and TP53 status into a new metadata column
+sc_data <- Seurat::AddMetaData(sc_data, str_c(sc_data$condition, "  ", sc_data$TP53_status), "condition_TP53_status")
+
+# Plot cells colored by condition_TP53_status using DimPlot
+Seurat::DimPlot(sc_data, group.by = "condition_TP53_status")
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+**What can you tell about Idasanutlin from these figures?**
+:::
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 3. Examining the cell cycle status
+
+Using an established set of cell cycle marker genes, it is possible to classify the cells in our dataset according to which phase they are in. Because we want to know whether a cancer drug affects the
+cell cycle, this is a useful analysis. Here we will calculate the cell cycle score using `CellCycleScoring` and add those information to the metadata table. Then we will visualize it using a UMAP.
+
+```{r fig.height = 7}
+# Perform cell cycle scoring using predefined S and G2M gene sets
+sc_data <- Seurat::CellCycleScoring(sc_data, s.features = Seurat::cc.genes$s.genes,
+                                    g2m.features = Seurat::cc.genes$g2m.genes)
+
+# Add a metadata column "Phase" based on the calculated cell cycle phase
+sc_data <- Seurat::AddMetaData(sc_data, factor(plyr::revalue(sc_data$Phase,
+                               c("G1"="G0/G1", "G2M"="G2/M")),
+                               levels = c("G0/G1", "S", "G2/M")), col.name = "Phase")
+
+# Plot cells colored by cell cycle phase using DimPlot
+Seurat::DimPlot(sc_data, group.by = "Phase")
+```
+
+We can see that cells are in different phases of the cell cycle, but the vast amound of data makes it difficult to discern visually. Instead we calculate and plot the proportion of cells in each of
+these phases in DMSO control and treated cell lines.
+
+> *Remember that Isadanutlin activates TP53 to block the cause G1/G2 cell cycle arrest*
+
+```{r fig.height = 8}
+# Visualize cell cycle phase distribution across singlet_IDs using ggplot2
+sc_data@meta.data %>% 
+  ggplot(aes(x = singlet_ID, fill = Phase)) +
+  geom_bar(position = "fill", size = 3, width = 0.8) +  # Bar plot with fill and width settings
+  facet_grid(vars(condition), vars(TP53_status), scales = "free_x") +  # Facet grid by condition and TP53_status with free x-axis scales
+  theme_bw() + # Use a black and white theme
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +  # Rotate x-axis labels
+  labs(x = "", y = "Cell fraction") # Axis labels
+
+```
+
+::: {style="border: 8px solid red; text-align: center"}
+**Do these proportions makes sense based on the Isadanutlin MoA?**
+:::
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## 4. Differential expression analysis
+
+We can dive deeper into the effects of Isadanutlin gene expression. Next we will perform differential expression analysis.
+
+First, we will generate *pseudo-bulk* gene expression datasets using the custom function `group_sum`. We do this because recent studies have shown that a pseudo-bulk approach produces fewer false
+positives compared to other methods which consider each individual cell such as the wilcoxon rank sum approach.
+
+```{r}
+# Define a function to calculate summed counts for each group
+group_sum <- function(group) {
+  Matrix::rowSums(sc_data@assays$RNA$counts[, group$ID, drop = FALSE])
+}
+
+# Calculate summed counts for each group defined by singlet_ID and condition
+summed_counts <- sc_data@meta.data %>%
+  tibble::rownames_to_column(var = 'ID') %>%  # Convert row names to a column named 'ID'
+  dplyr::group_split(singlet_ID, condition) %>%  # Split data into groups by singlet_ID and condition
+  plyr::laply(.fun = group_sum)  # Apply group_sum function to each group and return as a list
+
+# Summarize metadata by singlet_ID and condition, retaining TP53_status
+summed_metadata <- sc_data@meta.data %>%
+  dplyr::group_by(singlet_ID, condition) %>%  # Group by singlet_ID and condition
+  dplyr::summarise(TP53_status = first(TP53_status)) %>%  # Retain the first TP53_status within each group
+  dplyr::ungroup()  # Remove grouping information
+```
+
+We prepare the pseudo-bulk counts for differential expression analysis using the **edgeR** package. First, we convert summed_counts into a DGEList object (`edgeR::DGEList(t(summed_counts))`), which is
+a specialized data structure used for differential gene expression analysis. We then normalize these counts using the TMMwsp (Trimmed Mean of M-values with Weighted Trimmed Mean of M-values Scaling
+Factor) method (`edgeR::calcNormFactors(method = 'TMMwsp')`), ensuring that samples are comparable across libraries. Subsequently, we transform these normalized counts into counts per million (CPM)
+with a log transformation (`edgeR::cpm(log = TRUE, prior.count = 1)`), which stabilizes variance and prepares the data for downstream statistical analysis.
+
+```{r}
+# Create a DGEList object and normalize summed counts using edgeR package
+log_summed_counts <- edgeR::DGEList(t(summed_counts)) %>%
+  edgeR::calcNormFactors(method = 'TMMwsp') %>%  # Calculate normalization factors using TMMwsp method
+  edgeR::cpm(log = TRUE, prior.count = 1)  # Compute counts per million (CPM) with log transformation and prior count adjustment
+```
+
+Next we set up the design matrix and contrasts necessary for differential expression analysis using the **limma** package. First, we construct a design matrix (design) specifying the model formula
+`~0 + condition + singlet_ID` based on summed_metadata. This formula sets up a model without an intercept (\~0) and includes condition and singlet_ID as predictors, allowing us to account for both
+biological conditions and individual sample variability. Next, we define a contrast matrix (cm) using `limma::makeContrasts()`, where we specify the contrast of interest
+(`treat = "conditionIdasanutlin - conditionDMSO"`). This contrast compares gene expression between the 'Idasanutlin' treatment condition and the 'DMSO' control condition. These preparatory steps lay
+the foundation for conducting statistical tests to identify genes that are differentially expressed under different experimental conditions.
+
+```{r}
+# Create a design matrix for differential expression analysis using limma package
+design <- model.matrix(~0 + condition + singlet_ID, data = summed_metadata)
+
+# Define contrasts of interest for differential expression analysis
+cm <- limma::makeContrasts(
+  contrasts = list(treat = "conditionIdasanutlin - conditionDMSO"),
+  levels = make.names(colnames(design))
+)
+```
+
+Differential expression analysis is performed on the log-transformed and normalized counts (`log_summed_counts`). First, we fit linear models (fit) to the log-transformed counts based on the design
+matrix (design), which incorporates both the experimental conditions (condition) and individual sample identifiers (singlet_ID). Next, we apply the predefined contrasts (cm) to these linear models
+using `limma::contrasts.fit() (fit2)`, enabling us to compare gene expression between the 'Idasanutlin' treatment and 'DMSO' control conditions specified earlier. Subsequently, we use empirical Bayes
+moderation (`limma::eBayes(fit2, trend = TRUE`), fit3) to improve the estimation of variances, which enhances the robustness of differential expression results. Finally, we extract differentially
+expressed genes (`diff_expr`) using `limma::topTable()`, identifying genes with significant expression changes across conditions based on specified criteria.
+
+```{r}
+# Fit linear models to log-transformed and normalized counts
+fit <- limma::lmFit(log_summed_counts, design)
+
+# Apply specified contrasts to the linear models
+fit2 <- limma::contrasts.fit(fit, contrasts = cm)
+
+# Empirical Bayes moderation of the estimated variances
+fit3 <- limma::eBayes(fit2, trend = TRUE)
+
+# Identify differentially expressed genes
+diff_expr <- limma::topTable(fit3, number = Inf, genelist = rownames(log_summed_counts))
+
+```
+
+Finally we visualize the differential expression using a volcano plot.
+
+```{r}
+# Visualize differential expression results using ggplot2
+diff_expr %>% 
+  ggplot(aes(logFC, -log10(P.Value))) +  # Use log-fold change and -log10 transformed p-values for plotting
+  geom_point(aes(color = P.Value < 0.05)) +  # Scatter plot colored by significance (p < 0.05)
+  geom_text_repel(data = dplyr::filter(diff_expr, abs(logFC) > 1.1), aes(label = ID)) +  # Add labels for genes with |logFC| > 1.1
+  guides(color = FALSE) +  # Remove the color legend
+  ggtitle("Idasanutlin - DMSO") +  # Set plot title
+  theme_bw()  # Use a black and white theme
+
+```
+
+Interestingly, we find the induction of several genes involved in the TP53 pathway including MDM2 (Idasanutlin target), CDKN1A, and GDF15.
+
+However, this analysis does not indicate whether these changes occured only in the wild-type or mutant cell lines as we simply grouped them together. Let's rerun the differential expression analysis
+for each cell line individually. We will look at the top 25 differentially expressed genes.
+
+```{r fig.height = 8}
+# Prepare cell line metadata by summarizing TP53_status for each singlet_ID
+cell_line_metadata <- summed_metadata %>% 
+  dplyr::group_by(singlet_ID) %>%
+  dplyr::summarise(TP53_status = first(TP53_status)) %>%
+  dplyr::ungroup()
+
+# Calculate the number of cell lines (n_cls)
+n_cls <- nrow(cell_line_metadata)
+
+# Calculate log-fold changes between pairs of columns in log_summed_counts
+logfc_summed_counts <- log_summed_counts[, (1:n_cls) * 2] - log_summed_counts[, (1:n_cls) * 2 - 1]
+
+# Assign singlet_IDs as column names to logfc_summed_counts
+colnames(logfc_summed_counts) <- cell_line_metadata$singlet_ID
+
+# Select top 25 differentially expressed genes by absolute log-fold change
+top_diff_genes <- diff_expr %>% 
+  dplyr::arrange(-abs(logFC)) %>% 
+  head(25) %>% 
+  `[[`("ID")
+
+# Create a heatmap of log-fold changes for top differentially expressed genes
+pheatmap::pheatmap(
+  logfc_summed_counts[top_diff_genes, ],
+  treeheight_row = 0,
+  treeheight_col = 0,
+  annotation_col = cell_line_metadata %>%
+    tibble::column_to_rownames('singlet_ID') %>%
+    as.data.frame()
+)
+
+```
+
+```{r fig.width = 8}
+# Define a function to run differential expression analysis using limma with trend adjustment
+run_limma_trend <- function(log_summed_counts, summed_metadata) {
+  # Create a design matrix including conditions and singlet_ID
+  design <- model.matrix(~0 + condition + singlet_ID, data = summed_metadata)
+  
+  # Specify contrasts comparing Idasanutlin treatment vs DMSO control
+  cm <- limma::makeContrasts(
+    contrasts = list(treat = "conditionIdasanutlin - conditionDMSO"),
+    levels = make.names(colnames(design))
+  )
+  
+  # Fit linear models to log-transformed counts
+  fit <- limma::lmFit(log_summed_counts, design)
+  
+  # Apply contrasts to linear models and perform empirical Bayes moderation
+  fit2 <- limma::contrasts.fit(fit, contrasts = cm)
+  fit3 <- limma::eBayes(fit2, trend = TRUE)
+  
+  # Extract differential expression results
+  diff_expr <- limma::topTable(fit3, number = Inf, genelist = rownames(log_summed_counts))
+  
+  return(diff_expr)
+}
+
+# Perform differential expression analysis for TP53 wild type and mutant samples
+diff_expr_tp53_wt <- run_limma_trend(
+  log_summed_counts[, summed_metadata$TP53_status == "TP53_WT"],
+  dplyr::filter(summed_metadata, TP53_status == "TP53_WT")
+)
+diff_expr_tp53_mut <- run_limma_trend(
+  log_summed_counts[, summed_metadata$TP53_status == "TP53_MUT"],
+  dplyr::filter(summed_metadata, TP53_status == "TP53_MUT")
+)
+
+# Create volcano plots for TP53 wild type and mutant samples
+tp53_wt_volcano <- diff_expr_tp53_wt %>% 
+  ggplot(aes(logFC, -log10(P.Value))) +
+  geom_point(aes(color = P.Value < 0.05)) +
+  geom_text_repel(data = dplyr::filter(diff_expr_tp53_wt, abs(logFC) > 3.6), aes(label = ID)) +
+  guides(color = FALSE) + xlim(-5, 5) + ggtitle("TP53 Wild Type") +
+  theme_bw()
+
+tp53_mut_volcano <- diff_expr_tp53_mut %>% 
+  ggplot(aes(logFC, -log10(P.Value))) +
+  geom_point(aes(color = P.Value < 0.05)) +
+  geom_text_repel(data = dplyr::filter(diff_expr_tp53_mut, abs(logFC) > 0.8), aes(label = ID)) +
+  guides(color = FALSE) + xlim(-5, 5) + ggtitle("TP53 Mutant") +
+  theme_bw()
+
+# Arrange volcano plots using cowplot
+cowplot::plot_grid(tp53_wt_volcano, tp53_mut_volcano)
+
+```

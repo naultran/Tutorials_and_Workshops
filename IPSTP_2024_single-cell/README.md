@@ -29,7 +29,7 @@ For a more friendly look at the material, be sure to click on __Visual__ in the 
 
 -----------------------------
 Author: Rance Nault, PhD, Michigan State University <br>
-Reviewed by: <br>
-Date: July 23, 2024 <br>
+Reviewed by: Ruoqiao Chen, Michigan State University<br>
+Date: August, 2024 <br>
 
 Please feel free to contact naultran[at]msu.edu if you have any questions about this material. 

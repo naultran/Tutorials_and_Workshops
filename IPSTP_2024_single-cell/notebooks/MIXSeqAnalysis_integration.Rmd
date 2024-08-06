@@ -62,6 +62,7 @@ BiocManager::install("\<**package-name\>**")\*
 
 ```{r}
 suppressPackageStartupMessages({
+  library(ggplot2, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a")
   library(ggrepel)    # CRAN
   library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2")     # CRAN
   library(Matrix)     # CRAN

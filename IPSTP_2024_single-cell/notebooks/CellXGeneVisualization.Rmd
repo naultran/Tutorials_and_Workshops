@@ -18,6 +18,7 @@ We use this dataset to demonstrate the more fine-grained control over our visual
 Here we will load the required packages. This notebook only requires `Seurat`. If this package has not already been installed you can type the following in the console below: `install.packages('Seurat')`
 
 ```{r}
+library(ggplot2, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a")
 library(Seurat)
 ```
 

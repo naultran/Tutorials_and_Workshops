@@ -53,7 +53,8 @@ BiocManager::install("\<**package-name\>**")\*
 
 ```{r}
 suppressPackageStartupMessages({
-  library(patchwork, lib.loc = '/mnt/scratch/naultran/R_IPSTP_custom_libs/')
+  library(ggplot2, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a")
+  #library(patchwork, lib.loc = '/mnt/research/IPSTP_2024/IPSTP_Nault/R_IPSTP_custom_libs/')
   #library(ggplot2, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a")   #CRAN
   #library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library")
   library(Seurat, lib.loc = "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2")

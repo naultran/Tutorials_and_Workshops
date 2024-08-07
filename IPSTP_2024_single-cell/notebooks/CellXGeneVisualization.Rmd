@@ -15,6 +15,18 @@ We use this dataset to demonstrate the more fine-grained control over our visual
 
 ## 1. Set up your R environment
 
+::: {style="border: 8px solid orange"}
+**Before you start:**
+
+We need to tell R Studio where to find the files that we will be using as part of this notebook. Instructions on where to download these are in the notebook, but because of their sizes we have pre-downloaded them onto a shared space on the HPC. **Be sure to do the following before running this code:**
+
+1.  Clear objects from the workspace (broom in upper right)
+2.  Restart R session (Session menu)
+3.  Paste the following into the **Console**:
+
+.libPaths( c("/mnt/research/IPSTP_2024/IPSTP_Nault/R_IPSTP_custom_libs", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-CRAN/2023.12-foss-2023a", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R/4.3.2-gfbf-2023a/lib/R/library", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/R-bundle-Bioconductor/3.18-foss-2023a-R-4.3.2", "/cvmfs/ubuntu_2204.icer.msu.edu/2023.06/x86_64/generic/software/arrow-R/14.0.0.2-foss-2023a-R-4.3.2" ) )
+:::
+
 Here we will load the required packages. This notebook only requires `Seurat`. If this package has not already been installed you can type the following in the console below: `install.packages('Seurat')`
 
 ```{r}

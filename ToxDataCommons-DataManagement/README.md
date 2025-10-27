@@ -33,12 +33,12 @@ This structure isn't required but helps keep your data organized and simplifies 
 * **Program**: An overarching institute, center, or network working on shared goals (e.g., **MSUSRC**). This level provides access to collaborative studies.
 * **Project**: A smaller group for focused experiments. Subjects/samples typically stay within a project but may be used across multiple experiments.
 
-> You will be given a **Program** and **Project** name after informing the ToxDC team of your submission plans.
+> You will be assigned a **Program** and **Project** name after informing the ToxDC team of your submission plans.
 
 <div style="background-color:#ffe5e5; padding:10px; border:1px solid #ffcccc; border-radius:6px; margin-top:8px;">
 <details>
   <summary><i><b>Developer notes</b></i></summary>
-<b>#TODO:</b> Set-up a Google form to request a new program/project.
+<b>#TODO:</b> The team will set up a Google form to formalize the request process. Currently we are able to handle the volume on a per-user basis.
 </details>
 </div>
 
@@ -75,14 +75,6 @@ Whenever possible, use **open, non-proprietary formats**. This allows others to 
 
 ---
 
-# TODO - MUST HAVE A STUDY
-
-https://comptox.epa.gov/dashboard/
-
-!!!! MUST BE project.submitter_id
-
-/mnt/ufs18/nodr/home/naultran/miniforge-envs/cellpose) naultran@amr-216:/mnt/ffs24/home/naultran/temporary-gen3$ python auto_gen3_upload.py /mnt/ffs24/home/naultran/temporary-gen3/my_download/MSUSRC/TDC0006/PRJ129/MetadataFiles/TDC0006-PRJ129C-datafile.tsv --base-path /mnt/ffs24/home/naultran/temporary-gen3/my_download/MSUSRC/TDC0006/PRJ129/DataFiles/ --cred-path /mnt/ffs24/home/naultran/temporary-gen3/credentials_toxdatacommons.json --prog MSUSRC --proj TDC0006 --profile toxdc --api-url https://dev.toxdatacommons.com
-
 ## 📝 Manually Collected Data Format
 
 Manually recorded data is often the **least standardized**. ToxDataCommons accepts, at minimum, a tabular file with the following columns:
@@ -105,12 +97,16 @@ Manually recorded data is often the **least standardized**. ToxDataCommons accep
 </details>
 </div>
 
----
+# START HERE
 
 ## 🗎 Using SheetMATE
 
+> <b> To begin you must have a unique study identifier (or use one previously created) </b>
+
 1.  **Download** a copy of the **SheetMATE App Script**.
-    * [https://docs.google.com/spreadsheets/d/usp=sharing](https://docs.google.com/spreadsheets/d/usp=sharing)
+
+> Contact the ToxDataCommons team for access to the alpha version of SheetMATE.
+
     <details>
       <summary><strong>⚠️ Note</strong></summary>
       <div style="background-color:#f6fa87; padding:10px; border:1px solid #ffcccc; border-radius:6px; margin-top:8px;">
@@ -121,6 +117,16 @@ Manually recorded data is often the **least standardized**. ToxDataCommons accep
     * **Extensions** $\rightarrow$ **App Script** $\rightarrow$ **Code.gs** $\rightarrow$ **Run**
     > You will be prompted to grant permissions. If you prefer not to grant them (due to the current non-server-connected version), contact the ToxDataCommons team for templates instead.
 3.  A new menu option named **“ToxDataCommons”** will appear.
+
+---
+
+## Set up study
+
+This step is also the starting point for the **metadata-first** approach. We assume your program and project are already created.
+
+1.  **Load the Study template**: **ToxDataCommons** $\rightarrow$ **Populate metadata template**
+    
+2.  **Populate the template**. Additional instructions and rules are provided directly within the template.
 
 ---
 
@@ -148,17 +154,7 @@ Use the SheetMATE app to create a manifest that lists all files you plan to uplo
 
 ---
 
-### 2. Upload Study Metadata
-
-This step is also the starting point for the **metadata-first** approach. We assume your program and project are already created.
-
-1.  **Load the Study template**: **ToxDataCommons** $\rightarrow$ **Populate metadata template**
-    
-2.  **Populate the template**. Additional instructions and rules are provided directly within the template.
-
----
-
-## 3. Working with Remaining Templates
+## 2. Populating node templates
 
 **Metadata upload must follow the order of the data dictionary** to ensure proper linking.
 
@@ -179,7 +175,7 @@ Use the exact same method (**ToxDataCommons** $\rightarrow$ **Populate metadata 
 
 ---
 
-### 4. Linking Metadata to Dataset
+### 3. Linking Metadata to Dataset
 
 When you reach the step for the specific data file node (e.g., `weight_measurements`), fill out the template as you have for others.
 
